@@ -2,6 +2,7 @@ import type { ParamDefinition } from "@/params";
 import { applyAlignedStroke } from "../stroke";
 import { STROKE_ALIGN_PARAM, type GraphicStrokeAlign } from "./shared";
 import type { GraphicDefinition } from "../types";
+import { editorT } from "@/i18n/editor";
 
 interface StarParams {
 	fill: string;
@@ -15,20 +16,20 @@ interface StarParams {
 const STAR_PARAMS: ParamDefinition<keyof StarParams & string>[] = [
 	{
 		key: "fill",
-		label: "Fill",
+		label: editorT("params.fill"),
 		type: "color",
 		default: "#ffffff",
 	},
 	{
 		key: "stroke",
-		label: "Color",
+		label: editorT("params.color"),
 		type: "color",
 		default: "#000000",
 		group: "stroke",
 	},
 	{
 		key: "strokeWidth",
-		label: "Width",
+		label: editorT("params.width"),
 		type: "number",
 		default: 0,
 		min: 0,
@@ -40,7 +41,7 @@ const STAR_PARAMS: ParamDefinition<keyof StarParams & string>[] = [
 	STROKE_ALIGN_PARAM,
 	{
 		key: "points",
-		label: "Points",
+		label: editorT("params.points"),
 		type: "number",
 		default: 5,
 		min: 3,
@@ -50,7 +51,7 @@ const STAR_PARAMS: ParamDefinition<keyof StarParams & string>[] = [
 	},
 	{
 		key: "depth",
-		label: "Depth",
+		label: editorT("params.depth"),
 		type: "number",
 		default: 45,
 		min: 1,
@@ -62,7 +63,7 @@ const STAR_PARAMS: ParamDefinition<keyof StarParams & string>[] = [
 
 export const starGraphicDefinition: GraphicDefinition = {
 	id: "star",
-	name: "Star",
+	name: editorT("graphics.star"),
 	keywords: ["star", "sparkle", "burst"],
 	params: STAR_PARAMS,
 	render({ ctx, params, width, height }) {
@@ -70,7 +71,10 @@ export const starGraphicDefinition: GraphicDefinition = {
 		const stroke = String(params.stroke ?? "#000000");
 		const strokeWidth = Math.max(0, Number(params.strokeWidth ?? 0));
 		const strokeAlign = (params.strokeAlign ?? "center") as GraphicStrokeAlign;
-		const points = Math.max(3, Math.min(12, Math.round(Number(params.points ?? 5))));
+		const points = Math.max(
+			3,
+			Math.min(12, Math.round(Number(params.points ?? 5))),
+		);
 		const depth = Math.max(1, Math.min(99, Number(params.depth ?? 45))) / 100;
 		const inset = strokeAlign === "center" ? strokeWidth / 2 : 0;
 		const outerRadius = Math.max(1, Math.min(width, height) / 2 - inset);

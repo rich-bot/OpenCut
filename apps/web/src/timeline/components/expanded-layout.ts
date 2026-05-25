@@ -1,10 +1,8 @@
-import type {
-	AnimationPath,
-	ElementAnimations,
-} from "@/animation/types";
+import type { AnimationPath, ElementAnimations } from "@/animation/types";
 import type { TimelineTrack } from "@/timeline";
 import { getElementKeyframes } from "@/animation";
 import { KEYFRAME_LANE_HEIGHT_PX } from "./layout";
+import { editorT } from "@/i18n/editor";
 
 export interface ExpandedRow {
 	propertyPath: AnimationPath;
@@ -16,7 +14,9 @@ interface PropertyGroupDefinition {
 }
 
 const PROPERTY_GROUPS: PropertyGroupDefinition[] = [
-	{ matchesPath: (path) => path.startsWith("transform.") || path === "opacity" },
+	{
+		matchesPath: (path) => path.startsWith("transform.") || path === "opacity",
+	},
 	{ matchesPath: (path) => path === "volume" || path === "color" },
 	{ matchesPath: (path) => path.startsWith("background.") },
 	{ matchesPath: (path) => path.startsWith("params.") },
@@ -24,20 +24,20 @@ const PROPERTY_GROUPS: PropertyGroupDefinition[] = [
 ];
 
 const PROPERTY_LABELS: Partial<Record<string, string>> = {
-	"transform.positionX": "Position X",
-	"transform.positionY": "Position Y",
-	"transform.scaleX": "Scale X",
-	"transform.scaleY": "Scale Y",
-	"transform.rotate": "Rotation",
-	opacity: "Opacity",
-	volume: "Volume",
-	color: "Color",
-	"background.color": "BG Color",
-	"background.paddingX": "BG Pad X",
-	"background.paddingY": "BG Pad Y",
-	"background.offsetX": "BG Offset X",
-	"background.offsetY": "BG Offset Y",
-	"background.cornerRadius": "Corner Radius",
+	"transform.positionX": editorT("params.positionX"),
+	"transform.positionY": editorT("params.positionY"),
+	"transform.scaleX": editorT("params.scaleX"),
+	"transform.scaleY": editorT("params.scaleY"),
+	"transform.rotate": editorT("params.rotation"),
+	opacity: editorT("params.opacity"),
+	volume: editorT("params.volume"),
+	color: editorT("params.color"),
+	"background.color": editorT("params.bgColor"),
+	"background.paddingX": editorT("params.bgPaddingX"),
+	"background.paddingY": editorT("params.bgPaddingY"),
+	"background.offsetX": editorT("params.bgOffsetX"),
+	"background.offsetY": editorT("params.bgOffsetY"),
+	"background.cornerRadius": editorT("params.cornerRadius"),
 };
 
 export function getPropertyLabel(path: AnimationPath): string {
@@ -62,9 +62,7 @@ export function getExpandedRows({
 	const rows: ExpandedRow[] = [];
 
 	for (const group of PROPERTY_GROUPS) {
-		const groupPaths = propertyPaths.filter((path) =>
-			group.matchesPath(path),
-		);
+		const groupPaths = propertyPaths.filter((path) => group.matchesPath(path));
 		for (const path of groupPaths) {
 			rows.push({ propertyPath: path, label: getPropertyLabel(path) });
 		}

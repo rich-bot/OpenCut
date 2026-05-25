@@ -10,6 +10,7 @@ import {
 	getLineMaskOverlay,
 } from "@/masks/handle-positions";
 import { snapSplitMaskInteraction } from "@/masks/snap";
+import { editorT } from "@/i18n/editor";
 
 // cos(π/2) returns ~6e-17 in JS, not 0. Values below this threshold are snapped
 // to exactly 0 to prevent opposite-sign float noise on canvas corners that lie
@@ -104,7 +105,10 @@ export function getSplitMaskStrokeSegment({
 			y2,
 		});
 
-		if (!hit || intersections.some((point) => pointsEqual({ a: point, b: hit }))) {
+		if (
+			!hit ||
+			intersections.some((point) => pointsEqual({ a: point, b: hit }))
+		) {
 			continue;
 		}
 
@@ -182,7 +186,7 @@ function computeSplitMaskParamUpdate({
 
 export const splitMaskDefinition: MaskDefinition<"split"> = {
 	type: "split",
-	name: "Split",
+	name: editorT("masks.split"),
 	features: {
 		hasPosition: true,
 		hasRotation: true,
@@ -258,7 +262,7 @@ export const splitMaskDefinition: MaskDefinition<"split"> = {
 		},
 		{
 			key: "rotation",
-			label: "Rotation",
+			label: editorT("params.rotation"),
 			type: "number",
 			default: 0,
 			min: 0,
@@ -312,13 +316,8 @@ export const splitMaskDefinition: MaskDefinition<"split"> = {
 						[0, height, 0, 0],
 					];
 
-					const isInsideHalfPlane = ({
-						x,
-						y,
-					}: {
-						x: number;
-						y: number;
-					}) => halfPlaneSign({ lineX, lineY, normalX, normalY, x, y }) >= 0;
+					const isInsideHalfPlane = ({ x, y }: { x: number; y: number }) =>
+						halfPlaneSign({ lineX, lineY, normalX, normalY, x, y }) >= 0;
 
 					const vertices: [number, number][] = [];
 					for (const [x1, y1, x2, y2] of edges) {

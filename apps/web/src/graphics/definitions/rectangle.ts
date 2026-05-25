@@ -2,6 +2,7 @@ import type { ParamDefinition } from "@/params";
 import { applyAlignedStroke } from "../stroke";
 import { STROKE_ALIGN_PARAM, type GraphicStrokeAlign } from "./shared";
 import type { GraphicDefinition } from "../types";
+import { editorT } from "@/i18n/editor";
 
 interface RectangleParams {
 	fill: string;
@@ -14,20 +15,20 @@ interface RectangleParams {
 const RECTANGLE_PARAMS: ParamDefinition<keyof RectangleParams & string>[] = [
 	{
 		key: "fill",
-		label: "Fill",
+		label: editorT("params.fill"),
 		type: "color",
 		default: "#ffffff",
 	},
 	{
 		key: "stroke",
-		label: "Color",
+		label: editorT("params.color"),
 		type: "color",
 		default: "#000000",
 		group: "stroke",
 	},
 	{
 		key: "strokeWidth",
-		label: "Width",
+		label: editorT("params.width"),
 		type: "number",
 		default: 0,
 		min: 0,
@@ -39,7 +40,7 @@ const RECTANGLE_PARAMS: ParamDefinition<keyof RectangleParams & string>[] = [
 	STROKE_ALIGN_PARAM,
 	{
 		key: "cornerRadius",
-		label: "Corner radius",
+		label: editorT("params.cornerRadius"),
 		type: "number",
 		default: 0,
 		min: 0,
@@ -51,7 +52,7 @@ const RECTANGLE_PARAMS: ParamDefinition<keyof RectangleParams & string>[] = [
 
 export const rectangleGraphicDefinition: GraphicDefinition = {
 	id: "rectangle",
-	name: "Rectangle",
+	name: editorT("graphics.rectangle"),
 	keywords: ["rectangle", "square", "box"],
 	params: RECTANGLE_PARAMS,
 	render({ ctx, params, width, height }) {
@@ -64,7 +65,8 @@ export const rectangleGraphicDefinition: GraphicDefinition = {
 		const drawHeight = Math.max(1, height - inset * 2);
 		const radiusPercent = Math.max(0, Number(params.cornerRadius ?? 0));
 		const radius =
-			(Math.min(drawWidth, drawHeight) / 2) * Math.min(radiusPercent, 50) / 50;
+			((Math.min(drawWidth, drawHeight) / 2) * Math.min(radiusPercent, 50)) /
+			50;
 
 		ctx.clearRect(0, 0, width, height);
 		const path = new Path2D();

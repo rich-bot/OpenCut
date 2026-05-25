@@ -15,11 +15,17 @@ export interface MediaDragData extends BaseDragData {
 export interface TextDragData extends BaseDragData {
 	type: "text";
 	content: string;
+	params?: Partial<ParamValues>;
 }
 
 export interface StickerDragData extends BaseDragData {
 	type: "sticker";
 	stickerId: string;
+	assetType?: "image" | "video";
+	sourceUrl?: string;
+	sourceDuration?: number;
+	intrinsicWidth?: number;
+	intrinsicHeight?: number;
 }
 
 export interface GraphicDragData extends BaseDragData {

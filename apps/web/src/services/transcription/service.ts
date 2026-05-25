@@ -8,6 +8,8 @@ import {
 	DEFAULT_TRANSCRIPTION_MODEL,
 	TRANSCRIPTION_MODELS,
 } from "@/transcription/models";
+import { getModelLanguageCode } from "@/transcription/languages";
+import { normalizeTranscriptionResult } from "@/transcription/normalize";
 import type { WorkerMessage, WorkerResponse } from "./worker";
 
 type ProgressCallback = (progress: TranscriptionProgress) => void;
@@ -36,6 +38,8 @@ class TranscriptionService {
 				reject(new Error("Worker not initialized"));
 				return;
 			}
+			const modelLanguage =
+				language === "auto" ? "auto" : getModelLanguageCode({ language });
 
 			const handleMessage = (event: MessageEvent<WorkerResponse>) => {
 				const response = event.data;
@@ -51,11 +55,16 @@ class TranscriptionService {
 
 					case "transcribe-complete":
 						this.worker?.removeEventListener("message", handleMessage);
-						resolve({
-							text: response.text,
-							segments: response.segments,
-							language,
-						});
+						resolve(
+							normalizeTranscriptionResult({
+								result: {
+									text: response.text,
+									segments: response.segments,
+									language,
+								},
+								language,
+							}),
+						);
 						break;
 
 					case "transcribe-error":
@@ -75,7 +84,7 @@ class TranscriptionService {
 			this.worker.postMessage({
 				type: "transcribe",
 				audio: audioData,
-				language,
+				language: modelLanguage,
 			} satisfies WorkerMessage);
 		});
 	}

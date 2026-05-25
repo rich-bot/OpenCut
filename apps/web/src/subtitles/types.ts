@@ -6,6 +6,7 @@ import type {
 	TextFontWeight,
 } from "@/text/primitives";
 import type { CaptionChunk } from "@/transcription/types";
+import type { RichTextRun } from "@/text/rich-text";
 
 export interface SubtitlePlacementStyle {
 	verticalAlign?: "top" | "middle" | "bottom";
@@ -38,11 +39,14 @@ export interface SubtitleStyleOverrides {
 	textDecoration?: TextDecoration;
 	letterSpacing?: number;
 	lineHeight?: number;
+	outlineColor?: string;
+	outlineWidth?: number;
 	placement?: SubtitlePlacementStyle;
 }
 
 export interface SubtitleCue extends CaptionChunk {
 	style?: SubtitleStyleOverrides;
+	richTextRuns?: RichTextRun[];
 }
 
 export interface ParseSubtitleResult {

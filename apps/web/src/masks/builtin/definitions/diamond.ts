@@ -8,6 +8,7 @@ import {
 	getStrokeOffset,
 	rotatePoint,
 } from "../box-like";
+import { editorT } from "@/i18n/editor";
 
 function buildDiamondPath({
 	centerX,
@@ -47,7 +48,7 @@ function buildDiamondPath({
 
 export const diamondMaskDefinition: MaskDefinition<"diamond"> = {
 	type: "diamond",
-	name: "Diamond",
+	name: editorT("masks.diamond"),
 	features: {
 		hasPosition: true,
 		hasRotation: true,

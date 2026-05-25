@@ -24,8 +24,10 @@ export type VideoFileData = {
 
 export async function readVideoFile({
 	file,
+	thumbnailTimeSeconds = 1,
 }: {
 	file: File;
+	thumbnailTimeSeconds?: number;
 }): Promise<VideoFileData> {
 	const input = new Input({
 		source: new BlobSource(file),
@@ -47,7 +49,12 @@ export async function readVideoFile({
 		let thumbnailUrl: string | null = null;
 		if (canDecode) {
 			const sink = new VideoSampleSink(videoTrack);
-			const frame = await sink.getSample(1);
+			const frame = await sink.getSample(
+				Math.min(
+					Math.max(0, thumbnailTimeSeconds),
+					Math.max(0, duration - 0.01),
+				),
+			);
 			if (frame) {
 				try {
 					thumbnailUrl = renderThumbnailDataUrl({

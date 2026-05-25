@@ -7,10 +7,11 @@ import {
 	getDefaultSquareMaskParams,
 	getStrokeOffset,
 } from "../box-like";
+import { editorT } from "@/i18n/editor";
 
 export const ellipseMaskDefinition: MaskDefinition<"ellipse"> = {
 	type: "ellipse",
-	name: "Ellipse",
+	name: editorT("masks.ellipse"),
 	features: {
 		hasPosition: true,
 		hasRotation: true,

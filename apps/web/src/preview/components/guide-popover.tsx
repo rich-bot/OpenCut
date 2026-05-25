@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { GUIDE_REGISTRY, getGuideById } from "@/guides";
+import { editorT } from "@/i18n/editor";
 import { usePreviewStore } from "@/preview/preview-store";
 import {
 	Popover,
@@ -23,7 +24,7 @@ export function GridPopover({ children }: { children: React.ReactNode }) {
 			<PopoverTrigger>{children}</PopoverTrigger>
 			<PopoverContent sideOffset={8} className="w-60 px-0">
 				<div className="flex flex-col gap-2 px-4">
-					<Label>Guides</Label>
+					<Label>{editorT("guides.title")}</Label>
 					<div className="grid grid-cols-3 gap-1">
 						{GUIDE_REGISTRY.map((guide) => (
 							<GridItem

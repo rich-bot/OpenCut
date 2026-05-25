@@ -20,6 +20,8 @@ import {
 	clearFormDraft,
 } from "@/components/ui/form";
 import type { FeedbackEntry } from "../types";
+import { editorT } from "@/i18n/editor";
+import { withBasePath } from "@/utils/base-path";
 
 const PERSIST_KEY = "feedback-draft";
 const HISTORY_KEY = "feedback-history";
@@ -61,7 +63,7 @@ function useFeedback() {
 		setIsSubmitting(true);
 
 		try {
-			const res = await fetch("/api/feedback", {
+			const res = await fetch(withBasePath("/api/feedback"), {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(values),
@@ -69,7 +71,7 @@ function useFeedback() {
 
 			if (!res.ok) {
 				const data = await res.json().catch(() => null);
-				throw new Error(data?.error ?? "Failed to submit");
+				throw new Error(data?.error ?? editorT("feedback.submitError"));
 			}
 
 			const { entry } = await res.json();
@@ -77,10 +79,10 @@ function useFeedback() {
 			setEntries(next);
 			writeHistory({ entries: next });
 			onSuccess();
-			toast.success("Feedback sent");
+			toast.success(editorT("feedback.success"));
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to send feedback",
+				error instanceof Error ? error.message : editorT("feedback.sendError"),
 			);
 		} finally {
 			setIsSubmitting(false);
@@ -97,7 +99,7 @@ export function FeedbackPopover() {
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
 				<Button variant="outline" className="h-8">
-					Send feedback
+					{editorT("feedback.trigger")}
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent align="end" className="w-80 p-0">
@@ -148,7 +150,7 @@ function FeedbackPopoverContent({ onClose }: { onClose: () => void }) {
 						onClick={() => setView("compose")}
 						className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
 					>
-						← Back
+						← {editorT("common.back")}
 					</button>
 				</div>
 			</div>
@@ -158,7 +160,10 @@ function FeedbackPopoverContent({ onClose }: { onClose: () => void }) {
 	return (
 		<div className="flex flex-col">
 			<Form persistKey={PERSIST_KEY} {...form}>
-				<form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col">
+				<form
+					onSubmit={form.handleSubmit(handleSubmit)}
+					className="flex flex-col"
+				>
 					<FormField
 						control={form.control}
 						name="message"
@@ -166,7 +171,7 @@ function FeedbackPopoverContent({ onClose }: { onClose: () => void }) {
 							<FormItem>
 								<FormControl>
 									<Textarea
-										placeholder="Thoughts, bugs, ideas..."
+										placeholder={editorT("feedback.placeholder")}
 										className="min-h-[7rem] text-sm p-3 bg-background shadow-none border-none! resize-none"
 										{...field}
 									/>
@@ -195,7 +200,7 @@ function FeedbackPopoverContent({ onClose }: { onClose: () => void }) {
 									size="sm"
 									onClick={onClose}
 								>
-									Cancel
+									{editorT("common.cancel")}
 								</Button>
 							)}
 							<Button
@@ -203,7 +208,7 @@ function FeedbackPopoverContent({ onClose }: { onClose: () => void }) {
 								size="sm"
 								disabled={isSubmitting || !form.watch("message").trim()}
 							>
-								{isSubmitting ? <Spinner /> : "Send"}
+								{isSubmitting ? <Spinner /> : editorT("common.send")}
 							</Button>
 						</div>
 					</div>
@@ -216,13 +221,13 @@ function FeedbackPopoverContent({ onClose }: { onClose: () => void }) {
 function relativeDate(iso: string): string {
 	const diff = Date.now() - new Date(iso).getTime();
 	const mins = Math.floor(diff / 60_000);
-	if (mins < 1) return "just now";
-	if (mins < 60) return `${mins}m ago`;
+	if (mins < 1) return editorT("feedback.justNow");
+	if (mins < 60) return editorT("feedback.minutesAgo", { count: mins });
 	const hrs = Math.floor(mins / 60);
-	if (hrs < 24) return `${hrs}h ago`;
+	if (hrs < 24) return editorT("feedback.hoursAgo", { count: hrs });
 	const days = Math.floor(hrs / 24);
-	if (days < 7) return `${days}d ago`;
-	return new Date(iso).toLocaleDateString(undefined, {
+	if (days < 7) return editorT("feedback.daysAgo", { count: days });
+	return new Date(iso).toLocaleDateString("zh-CN", {
 		month: "short",
 		day: "numeric",
 	});

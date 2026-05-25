@@ -1,3 +1,5 @@
+import { withBasePath } from "@/utils/base-path";
+
 export const SITE_URL = "https://opencut.app";
 
 export const SITE_INFO = {
@@ -10,4 +12,4 @@ export const SITE_INFO = {
 	favicon: "/favicon.ico",
 };
 
-export const DEFAULT_LOGO_URL = "/logos/opencut/svg/logo.svg";
+export const DEFAULT_LOGO_URL = withBasePath("/logos/opencut/svg/logo.svg");

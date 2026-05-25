@@ -1,4 +1,5 @@
 import { buildStickerId, parseStickerId } from "../sticker-id";
+import { withBasePath } from "@/utils/base-path";
 import type {
 	StickerBrowseResult,
 	StickerItem,
@@ -20,7 +21,9 @@ function getFlagsBaseUrl(): string {
 
 function buildFlagUrl({ code }: { code: string }): string {
 	const normalizedCode = code.toLowerCase();
-	return `${getFlagsBaseUrl()}/${encodeURIComponent(normalizedCode)}.svg`;
+	return withBasePath(
+		`${getFlagsBaseUrl()}/${encodeURIComponent(normalizedCode)}.svg`,
+	);
 }
 
 async function loadCountries(): Promise<CountryRecord[]> {
@@ -113,7 +116,9 @@ function filterCountriesByQuery({
 	const regionIds = resolveQueryToRegions({ query });
 
 	if (regionIds) {
-		return countries.filter((country) => country.region && regionIds.has(country.region));
+		return countries.filter(
+			(country) => country.region && regionIds.has(country.region),
+		);
 	}
 
 	return countries.filter((country) => {

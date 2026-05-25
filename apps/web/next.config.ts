@@ -2,7 +2,20 @@ import type { NextConfig } from "next";
 import { withBotId } from "botid/next/config";
 import { withContentCollections } from "@content-collections/next";
 
+function normalizeBasePath(value?: string) {
+	if (!value) return undefined;
+
+	const trimmed = value.trim();
+	if (!trimmed || trimmed === "/") return undefined;
+
+	const withLeadingSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+	return withLeadingSlash.replace(/\/+$/, "");
+}
+
+const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH);
+
 const nextConfig: NextConfig = {
+	...(basePath ? { basePath } : {}),
 	compiler: {
 		removeConsole: process.env.NODE_ENV === "production",
 	},

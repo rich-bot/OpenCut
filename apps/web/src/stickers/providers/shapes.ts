@@ -1,4 +1,10 @@
-import { buildGraphicPreviewUrl, buildDefaultGraphicInstance, graphicsRegistry, registerDefaultGraphics } from "@/graphics";
+import {
+	buildGraphicPreviewUrl,
+	buildDefaultGraphicInstance,
+	graphicsRegistry,
+	registerDefaultGraphics,
+} from "@/graphics";
+import { editorT } from "@/i18n/editor";
 import type { ParamValues } from "@/params";
 import { buildStickerId, parseStickerId } from "../sticker-id";
 import type {
@@ -18,27 +24,39 @@ type ShapeGraphicPreset = {
 };
 
 const LEGACY_SHAPE_PRESETS: Record<string, ShapeGraphicPreset> = {
-	square: { shapeKey: "square", name: "Square", definitionId: "rectangle" },
-	circle: { shapeKey: "circle", name: "Circle", definitionId: "ellipse" },
+	square: {
+		shapeKey: "square",
+		name: editorT("stickers.shape.square"),
+		definitionId: "rectangle",
+	},
+	circle: {
+		shapeKey: "circle",
+		name: editorT("stickers.shape.circle"),
+		definitionId: "ellipse",
+	},
 	triangle: {
 		shapeKey: "triangle",
-		name: "Triangle",
+		name: editorT("stickers.shape.triangle"),
 		definitionId: "polygon",
 		params: { sides: 3 },
 	},
 	hexagon: {
 		shapeKey: "hexagon",
-		name: "Hexagon",
+		name: editorT("stickers.shape.hexagon"),
 		definitionId: "polygon",
 		params: { sides: 6 },
 	},
 	diamond: {
 		shapeKey: "diamond",
-		name: "Diamond",
+		name: editorT("stickers.shape.diamond"),
 		definitionId: "polygon",
 		params: { sides: 4 },
 	},
-	star: { shapeKey: "star", name: "Star", definitionId: "star" },
+	star: {
+		shapeKey: "star",
+		name: editorT("stickers.shape.star"),
+		definitionId: "star",
+	},
 };
 
 function getShapePresets(): ShapeGraphicPreset[] {
@@ -68,7 +86,8 @@ function getShapeParams({
 	preset: ShapeGraphicPreset;
 }): ParamValues {
 	return {
-		...buildDefaultGraphicInstance({ definitionId: preset.definitionId }).params,
+		...buildDefaultGraphicInstance({ definitionId: preset.definitionId })
+			.params,
 		...preset.params,
 	};
 }
@@ -117,7 +136,11 @@ function toStickerItem({
 	};
 }
 
-function filterShapesByQuery({ query }: { query: string }): ShapeGraphicPreset[] {
+function filterShapesByQuery({
+	query,
+}: {
+	query: string;
+}): ShapeGraphicPreset[] {
 	const normalizedQuery = query.trim().toLowerCase();
 	const presets = getShapePresets();
 	if (!normalizedQuery) {

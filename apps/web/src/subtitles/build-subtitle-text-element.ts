@@ -8,6 +8,11 @@ import { DEFAULTS } from "@/timeline/defaults";
 import { mediaTimeFromSeconds } from "@/wasm";
 import type { CreateTextElement } from "@/timeline";
 import type { TextBackground } from "@/text/background";
+import {
+	RICH_TEXT_RUNS_PARAM,
+	normalizeRichTextRuns,
+	serializeRichTextRuns,
+} from "@/text/rich-text";
 import type {
 	TextAlign,
 	TextDecoration,
@@ -137,6 +142,8 @@ function resolveSubtitleStyle({
 	textDecoration: TextDecoration;
 	letterSpacing: number;
 	lineHeight: number;
+	outlineColor: string;
+	outlineWidth: number;
 	background: TextBackground;
 	placement: NonNullable<SubtitleStyleOverrides["placement"]>;
 } {
@@ -155,6 +162,8 @@ function resolveSubtitleStyle({
 		textDecoration: style?.textDecoration ?? "none",
 		letterSpacing: style?.letterSpacing ?? DEFAULTS.text.letterSpacing,
 		lineHeight: style?.lineHeight ?? DEFAULTS.text.lineHeight,
+		outlineColor: style?.outlineColor ?? "#000000",
+		outlineWidth: style?.outlineWidth ?? 0,
 		background: {
 			...DEFAULTS.text.background,
 			enabled: false,
@@ -281,15 +290,18 @@ export function buildSubtitleTextElement({
 	let content = caption.text;
 	let positionX = 0;
 	let positionY = 0;
+	const hasRichTextRuns = (caption.richTextRuns?.length ?? 0) > 0;
 
 	if (ctx) {
 		ctx.font = fontString;
 		setCanvasLetterSpacing({ ctx, letterSpacingPx: style.letterSpacing });
-		content = wrapSubtitleText({
-			ctx,
-			text: caption.text,
-			maxWidth,
-		});
+		content = hasRichTextRuns
+			? caption.text.trim().replace(/\r\n/g, "\n")
+			: wrapSubtitleText({
+					ctx,
+					text: caption.text,
+					maxWidth,
+				});
 		const measurement = measureWrappedTextBlock({
 			ctx,
 			content,
@@ -329,6 +341,8 @@ export function buildSubtitleTextElement({
 			textDecoration: style.textDecoration,
 			letterSpacing: style.letterSpacing,
 			lineHeight: style.lineHeight,
+			"stroke.color": style.outlineColor,
+			"stroke.width": style.outlineWidth,
 			"background.enabled": style.background.enabled,
 			"background.color": style.background.color,
 			"background.cornerRadius":
@@ -341,6 +355,17 @@ export function buildSubtitleTextElement({
 				style.background.offsetX ?? DEFAULTS.text.background.offsetX,
 			"background.offsetY":
 				style.background.offsetY ?? DEFAULTS.text.background.offsetY,
+			...(hasRichTextRuns
+				? {
+						[RICH_TEXT_RUNS_PARAM]:
+							serializeRichTextRuns({
+								runs: normalizeRichTextRuns({
+									content,
+									runs: caption.richTextRuns,
+								}),
+							}) ?? "",
+					}
+				: {}),
 			"transform.positionX": positionX,
 			"transform.positionY": positionY,
 		},

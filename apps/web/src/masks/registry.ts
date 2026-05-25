@@ -11,6 +11,7 @@ import type {
 } from "@/masks/types";
 import type { HugeiconsIconProps } from "@hugeicons/react";
 import { DefinitionRegistry } from "@/params/registry";
+import { editorT } from "@/i18n/editor";
 
 export type MaskIconProps = {
 	icon: HugeiconsIconProps["icon"];
@@ -32,7 +33,7 @@ export const BASE_MASK_PARAM_DEFINITIONS: ParamDefinition<
 >[] = [
 	{
 		key: "feather",
-		label: "Feather",
+		label: editorT("params.feather"),
 		type: "number",
 		default: 0,
 		min: 0,
@@ -42,7 +43,7 @@ export const BASE_MASK_PARAM_DEFINITIONS: ParamDefinition<
 	},
 	{
 		key: "strokeWidth",
-		label: "Stroke width",
+		label: editorT("params.strokeWidth"),
 		type: "number",
 		default: 0,
 		min: 0,
@@ -51,7 +52,7 @@ export const BASE_MASK_PARAM_DEFINITIONS: ParamDefinition<
 	},
 	{
 		key: "strokeColor",
-		label: "Stroke color",
+		label: editorT("params.strokeColor"),
 		type: "color",
 		default: "#ffffff",
 	},

@@ -387,7 +387,10 @@ export class DragDropController {
 		const element = buildTextElement({
 			raw: {
 				name: dragData.name ?? "",
-				params: { content: dragData.content ?? "" },
+				params: {
+					...(dragData.params ?? {}),
+					content: dragData.content ?? "",
+				},
 			},
 			startTime: target.xPosition,
 		});
@@ -405,6 +408,11 @@ export class DragDropController {
 			stickerId: dragData.stickerId,
 			name: dragData.name,
 			startTime: target.xPosition,
+			assetType: dragData.assetType,
+			sourceUrl: dragData.sourceUrl,
+			sourceDuration: dragData.sourceDuration,
+			intrinsicWidth: dragData.intrinsicWidth,
+			intrinsicHeight: dragData.intrinsicHeight,
 		});
 		this.insertAtTarget({ element, target, trackType: "graphic" });
 	}

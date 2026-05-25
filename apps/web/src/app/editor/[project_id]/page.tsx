@@ -11,13 +11,14 @@ import { PropertiesPanel } from "@/components/editor/panels/properties";
 import { Timeline } from "@/timeline/components";
 import { PreviewPanel } from "@/preview/components";
 import { EditorHeader } from "@/components/editor/editor-header";
+import { ExportButton } from "@/components/editor/export-button";
 import { EditorProvider } from "@/components/providers/editor-provider";
 import { Onboarding } from "@/components/editor/onboarding";
 import { MigrationDialog } from "@/project/components/migration-dialog";
 import { usePanelStore } from "@/editor/panel-store";
 import { usePasteMedia } from "@/media/use-paste-media";
 import { MobileGate } from "@/components/editor/mobile-gate";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useEditor } from "@/editor/use-editor";
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -34,27 +35,131 @@ import {
 	bookmarkNotesPreviewOverlay,
 	getBookmarkPreviewOverlaySource,
 } from "@/timeline/bookmarks/index";
+import { cn } from "@/utils/ui";
 
 export default function Editor() {
 	const params = useParams();
 	const projectId = params.project_id as string;
 
+	return <EditorWorkspace projectId={projectId} />;
+}
+
+export function EditorWorkspace({
+	projectId,
+	isEmbedded = false,
+	hideHeader = false,
+}: {
+	projectId: string;
+	isEmbedded?: boolean;
+	hideHeader?: boolean;
+}) {
 	return (
 		<MobileGate>
-			<EditorProvider projectId={projectId}>
-				<div className="bg-background flex h-screen w-screen flex-col overflow-hidden">
+			<EditorProvider projectId={projectId} isEmbedded={isEmbedded}>
+				<div
+					className={cn(
+						"bg-background flex h-screen w-screen flex-col overflow-hidden",
+						isEmbedded && "opencut-embedded-shell",
+					)}
+				>
 					<DegradedRendererBanner />
-					<EditorHeader />
+					{!hideHeader ? <EditorHeader isEmbedded={isEmbedded} /> : null}
+					{isEmbedded && hideHeader ? <HiddenEmbeddedExportButton /> : null}
 					<div className="min-h-0 min-w-0 flex-1">
 						<EditorLayout />
 					</div>
-					<Onboarding />
+					{isEmbedded ? <EmbedReadyBridge projectId={projectId} /> : null}
+					{isEmbedded ? <EmbedCommandBridge /> : null}
+					{!isEmbedded ? <Onboarding /> : null}
 					<MigrationDialog />
-					<ChangelogNotification />
+					{!isEmbedded ? <ChangelogNotification /> : null}
 				</div>
 			</EditorProvider>
 		</MobileGate>
 	);
+}
+
+export function MakeSameEditorWorkspace({
+	projectId,
+	isEmbedded = true,
+	makeSameId,
+	hideHeader = false,
+}: {
+	projectId: string;
+	isEmbedded?: boolean;
+	makeSameId?: string;
+	hideHeader?: boolean;
+}) {
+	return (
+		<MobileGate>
+			<EditorProvider projectId={projectId} isEmbedded={isEmbedded}>
+				<div
+					className={cn(
+						"bg-background flex h-screen w-screen flex-col overflow-hidden",
+						isEmbedded && "opencut-embedded-shell",
+					)}
+				>
+					<DegradedRendererBanner />
+					{!hideHeader ? <EditorHeader isEmbedded={isEmbedded} /> : null}
+					{isEmbedded && hideHeader ? <HiddenEmbeddedExportButton /> : null}
+					<div className="min-h-0 min-w-0 flex-1">
+						<EditorLayout />
+					</div>
+					{isEmbedded ? (
+						<EmbedReadyBridge projectId={makeSameId ?? projectId} />
+					) : null}
+					{isEmbedded ? <EmbedCommandBridge /> : null}
+					<MigrationDialog />
+				</div>
+			</EditorProvider>
+		</MobileGate>
+	);
+}
+
+function HiddenEmbeddedExportButton() {
+	return (
+		<div className="pointer-events-none fixed top-3 right-3 z-50 opacity-0">
+			<ExportButton isEmbedded />
+		</div>
+	);
+}
+
+function EmbedReadyBridge({ projectId }: { projectId: string }) {
+	useEffect(() => {
+		if (typeof window === "undefined" || window.parent === window) return;
+		window.parent.postMessage(
+			{ source: "opencut", type: "editor-ready", projectId },
+			"*",
+		);
+	}, [projectId]);
+
+	return null;
+}
+
+function EmbedCommandBridge() {
+	useEffect(() => {
+		const handleMessage = (event: MessageEvent) => {
+			const data = event.data as
+				| { source?: string; type?: string }
+				| null
+				| undefined;
+
+			if (data?.source !== "neo-web" || data.type !== "trigger-export") {
+				return;
+			}
+
+			document
+				.querySelector<HTMLButtonElement>(
+					'button[data-opencut-export-trigger="true"]',
+				)
+				?.click();
+		};
+
+		window.addEventListener("message", handleMessage);
+		return () => window.removeEventListener("message", handleMessage);
+	}, []);
+
+	return null;
 }
 
 function DegradedRendererBanner() {
@@ -64,13 +169,13 @@ function DegradedRendererBanner() {
 
 	return (
 		<div className="bg-accent border-b h-9 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-			<span>For the best experience, open OpenCut in Chrome.</span>
+			<span>为了获得最佳剪辑体验，建议使用 Chrome 打开。</span>
 			<Button
 				variant="text"
 				size="icon"
 				className="p-0 w-auto [&_svg]:size-3.5"
 				onClick={() => setDismissed(true)}
-				aria-label="Dismiss"
+				aria-label="关闭提示"
 			>
 				<HugeiconsIcon icon={Cancel01Icon} />
 			</Button>

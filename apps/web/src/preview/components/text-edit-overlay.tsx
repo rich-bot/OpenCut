@@ -5,9 +5,7 @@ import { usePreviewViewport } from "@/preview/components/preview-viewport";
 import { useEditor } from "@/editor/use-editor";
 import type { TextElement } from "@/timeline";
 import { DEFAULTS } from "@/timeline/defaults";
-import {
-	getElementLocalTime,
-} from "@/animation";
+import { getElementLocalTime } from "@/animation";
 import { resolveTransformAtTime } from "@/rendering/animation-values";
 import { buildTransformFromParams } from "@/rendering";
 import { resolveTextLayout } from "@/text/primitives";
@@ -15,6 +13,7 @@ import {
 	buildTextBackgroundFromElement,
 	buildTextLayoutParamsFromElement,
 } from "@/text/measure-element";
+import { editorT } from "@/i18n/editor";
 
 export function TextEditOverlay({
 	trackId,
@@ -122,7 +121,7 @@ export function TextEditOverlay({
 				suppressContentEditableWarning
 				tabIndex={0}
 				role="textbox"
-				aria-label="Edit text"
+				aria-label={editorT("preview.editText")}
 				className="cursor-text select-text outline-none whitespace-pre"
 				style={{
 					fontSize: resolvedTextLayout.scaledFontSize,

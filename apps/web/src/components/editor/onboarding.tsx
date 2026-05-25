@@ -3,6 +3,7 @@
 import { ArrowRightIcon } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { editorT } from "@/i18n/editor";
 import { SOCIAL_LINKS } from "@/site/social";
 import { useLocalStorage } from "@/services/storage/use-local-storage";
 import { Button } from "../ui/button";
@@ -28,13 +29,13 @@ export function Onboarding() {
 	const getStepTitle = () => {
 		switch (step) {
 			case 0:
-				return "Welcome to OpenCut Beta! 🎉";
+				return editorT("onboarding.welcomeTitle");
 			case 1:
-				return "⚠️ This is a super early beta!";
+				return editorT("onboarding.betaTitle");
 			case 2:
-				return "🦋 Have fun testing!";
+				return editorT("onboarding.testingTitle");
 			default:
-				return "OpenCut Onboarding";
+				return editorT("onboarding.defaultTitle");
 		}
 	};
 
@@ -44,10 +45,14 @@ export function Onboarding() {
 				return (
 					<div className="space-y-5">
 						<div className="space-y-3">
-							<Title title="Welcome to OpenCut Beta! 🎉" />
-							<Description description="You're among the first to try OpenCut - the fully open source CapCut alternative." />
+							<Title title={getStepTitle()} />
+							<Description
+								description={editorT("onboarding.welcomeDescription")}
+							/>
 						</div>
-						<NextButton onClick={handleNext}>Next</NextButton>
+						<NextButton onClick={handleNext}>
+							{editorT("onboarding.next")}
+						</NextButton>
 					</div>
 				);
 			case 1:
@@ -55,11 +60,17 @@ export function Onboarding() {
 					<div className="space-y-5">
 						<div className="space-y-3">
 							<Title title={getStepTitle()} />
-							<Description description="There's still a ton of things to do to make this editor amazing." />
-							<Description description="A lot of features are still missing. We're working hard to build them out!" />
-							<Description description="If you're curious, check out our roadmap [here](https://opencut.app/roadmap)" />
+							<Description
+								description={editorT("onboarding.betaDescriptionPrimary")}
+							/>
+							<Description
+								description={editorT("onboarding.betaDescriptionSecondary")}
+							/>
+							<Description description={editorT("onboarding.roadmap")} />
 						</div>
-						<NextButton onClick={handleNext}>Next</NextButton>
+						<NextButton onClick={handleNext}>
+							{editorT("onboarding.next")}
+						</NextButton>
 					</div>
 				);
 			case 2:
@@ -68,10 +79,14 @@ export function Onboarding() {
 						<div className="space-y-3">
 							<Title title={getStepTitle()} />
 							<Description
-								description={`Join our [Discord](${SOCIAL_LINKS.discord}), chat with cool people and share feedback to help make OpenCut the best editor ever.`}
+								description={editorT("onboarding.discord", {
+									url: SOCIAL_LINKS.discord,
+								})}
 							/>
 						</div>
-						<NextButton onClick={handleClose}>Finish</NextButton>
+						<NextButton onClick={handleClose}>
+							{editorT("onboarding.finish")}
+						</NextButton>
 					</div>
 				);
 			default:

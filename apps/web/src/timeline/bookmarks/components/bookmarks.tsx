@@ -33,6 +33,7 @@ import {
 	subMediaTime,
 	ZERO_MEDIA_TIME,
 } from "@/wasm";
+import { editorT } from "@/i18n/editor";
 
 const MIN_BOOKMARK_WIDTH_PX = 2;
 const BOOKMARK_MARKER_WIDTH_PX = 12;
@@ -92,7 +93,7 @@ export function TimelineBookmarksRow({
 					height: TIMELINE_BOOKMARK_ROW_HEIGHT_PX,
 					width: `${dynamicTimelineWidth}px`,
 				}}
-				aria-label="Timeline ruler"
+				aria-label={editorT("timeline.ruler")}
 				type="button"
 				onWheel={handleWheel}
 				onClick={(event) => {
@@ -349,16 +350,16 @@ function BookmarkPopoverContent({
 	return (
 		<>
 			<div className="flex flex-col gap-2">
-				<Label className="text-xs">Note</Label>
+				<Label className="text-xs">{editorT("bookmark.note")}</Label>
 				<Input
-					placeholder="Add a note..."
+					placeholder={editorT("bookmark.addNote")}
 					value={bookmark.note ?? ""}
 					onChange={(event) => handleUpdate({ note: event.target.value })}
 					className="h-8 text-sm"
 				/>
 			</div>
 			<div className="flex flex-col gap-2">
-				<Label className="text-xs">Color</Label>
+				<Label className="text-xs">{editorT("bookmark.color")}</Label>
 				<div className="relative">
 					<ColorPicker
 						value={uppercase({ string: draftColorHex })}
@@ -378,7 +379,7 @@ function BookmarkPopoverContent({
 								type="button"
 								variant="text"
 								size="text"
-								aria-label="Reset to default color"
+								aria-label={editorT("bookmark.resetColor")}
 								className="absolute top-1/2 right-1 -translate-y-1/2 mr-1"
 								onClick={() =>
 									editor.scenes.updateBookmark({
@@ -396,7 +397,7 @@ function BookmarkPopoverContent({
 				</div>
 			</div>
 			<div className="flex flex-col gap-2">
-				<Label className="text-xs">Duration</Label>
+				<Label className="text-xs">{editorT("bookmark.duration")}</Label>
 				<div className="flex items-center gap-1.5">
 					<Input
 						type="number"
@@ -432,10 +433,10 @@ function BookmarkPopoverContent({
 						handleRemove();
 					}
 				}}
-				aria-label="delete bookmark"
+				aria-label={editorT("bookmark.delete")}
 			>
 				<HugeiconsIcon icon={Delete02Icon} className="!size-3.5" />
-				Delete
+				{editorT("bookmark.delete")}
 			</Button>
 		</>
 	);

@@ -2,6 +2,7 @@ import type { TProject, TProjectMetadata } from "@/project/types";
 import { getProjectDurationFromScenes } from "@/timeline/scenes";
 import type { MediaAsset } from "@/media/types";
 import { IndexedDBAdapter } from "./indexeddb-adapter";
+import { IndexedDBFileAdapter } from "./indexeddb-file-adapter";
 import { OPFSAdapter } from "./opfs-adapter";
 import {
 	type StorageCapacityCheckResult,
@@ -15,6 +16,7 @@ import type {
 	StorageConfig,
 	SerializedProject,
 	SerializedScene,
+	StorageAdapter,
 } from "./types";
 import type { SavedSoundsData, SavedSound, SoundEffect } from "@/sounds/types";
 import {
@@ -97,7 +99,13 @@ class StorageService {
 			version: this.config.version,
 		});
 
-		const mediaAssetsAdapter = new OPFSAdapter(`media-files-${projectId}`);
+		const mediaAssetsAdapter: StorageAdapter<File> = OPFSAdapter.isSupported()
+			? new OPFSAdapter(`media-files-${projectId}`)
+			: new IndexedDBFileAdapter({
+					dbName: `${this.config.mediaDb}-files-${projectId}`,
+					storeName: "media-files",
+					version: this.config.version,
+				});
 
 		return { mediaMetadataAdapter, mediaAssetsAdapter };
 	}
@@ -562,12 +570,16 @@ class StorageService {
 		return OPFSAdapter.isSupported();
 	}
 
+	isFileStorageSupported(): boolean {
+		return this.isOPFSSupported() || IndexedDBFileAdapter.isSupported();
+	}
+
 	isIndexedDBSupported(): boolean {
 		return "indexedDB" in window;
 	}
 
 	isFullySupported(): boolean {
-		return this.isIndexedDBSupported() && this.isOPFSSupported();
+		return this.isIndexedDBSupported() && this.isFileStorageSupported();
 	}
 }
 

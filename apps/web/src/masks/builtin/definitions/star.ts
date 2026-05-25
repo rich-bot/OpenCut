@@ -8,6 +8,7 @@ import {
 	getStrokeOffset,
 	rotatePoint,
 } from "../box-like";
+import { editorT } from "@/i18n/editor";
 
 const STAR_INNER_RADIUS_RATIO = 0.45;
 const STAR_VERTEX_COUNT = 10;
@@ -87,7 +88,7 @@ function buildOverlayStarPath({
 
 export const starMaskDefinition: MaskDefinition<"star"> = {
 	type: "star",
-	name: "Star",
+	name: editorT("masks.star"),
 	features: {
 		hasPosition: true,
 		hasRotation: true,

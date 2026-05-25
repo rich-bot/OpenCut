@@ -3,19 +3,20 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
 	ArrowRightDoubleIcon,
-	ClosedCaptionIcon,
 	Folder03Icon,
 	Happy01Icon,
 	HeadphonesIcon,
 	MagicWand05Icon,
+	SpeechToTextIcon,
+	SubtitleIcon,
 	TextIcon,
 	Settings01Icon,
 	SlidersHorizontalIcon,
-	ColorsIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 
 export const TAB_KEYS = [
+	"subtitleEdit",
 	"media",
 	"sounds",
 	"text",
@@ -29,48 +30,70 @@ export const TAB_KEYS = [
 
 export type Tab = (typeof TAB_KEYS)[number];
 
-const createHugeiconsIcon =
-	({ icon }: { icon: IconSvgElement }) =>
-	({ className }: { className?: string }) => (
+export const VISIBLE_TAB_KEYS = [
+	"subtitleEdit",
+	"media",
+	"sounds",
+	"text",
+	"stickers",
+	"captions",
+	"settings",
+] as const satisfies readonly Tab[];
+
+export type VisibleTab = (typeof VISIBLE_TAB_KEYS)[number];
+
+export function isVisibleTab(tab: Tab): tab is VisibleTab {
+	return VISIBLE_TAB_KEYS.some((visibleTab) => visibleTab === tab);
+}
+
+const createHugeiconsIcon = ({ icon }: { icon: IconSvgElement }) => {
+	const AssetPanelIcon = ({ className }: { className?: string }) => (
 		<HugeiconsIcon icon={icon} className={className} />
 	);
+	AssetPanelIcon.displayName = "AssetPanelIcon";
+	return AssetPanelIcon;
+};
 
 export const tabs = {
 	media: {
 		icon: createHugeiconsIcon({ icon: Folder03Icon }),
-		label: "Media",
+		label: "素材",
 	},
 	sounds: {
 		icon: createHugeiconsIcon({ icon: HeadphonesIcon }),
-		label: "Sounds",
+		label: "音频",
 	},
 	text: {
 		icon: createHugeiconsIcon({ icon: TextIcon }),
-		label: "Text",
+		label: "文字",
 	},
 	stickers: {
 		icon: createHugeiconsIcon({ icon: Happy01Icon }),
-		label: "Stickers",
+		label: "贴纸",
+	},
+	subtitleEdit: {
+		icon: createHugeiconsIcon({ icon: SubtitleIcon }),
+		label: "字幕",
 	},
 	effects: {
 		icon: createHugeiconsIcon({ icon: MagicWand05Icon }),
-		label: "Effects",
+		label: "特效",
 	},
 	transitions: {
 		icon: createHugeiconsIcon({ icon: ArrowRightDoubleIcon }),
-		label: "Transitions",
+		label: "转场",
 	},
 	captions: {
-		icon: createHugeiconsIcon({ icon: ClosedCaptionIcon }),
-		label: "Captions",
+		icon: createHugeiconsIcon({ icon: SpeechToTextIcon }),
+		label: "识别",
 	},
 	adjustment: {
 		icon: createHugeiconsIcon({ icon: SlidersHorizontalIcon }),
-		label: "Adjustment",
+		label: "调节",
 	},
 	settings: {
 		icon: createHugeiconsIcon({ icon: Settings01Icon }),
-		label: "Settings",
+		label: "设置",
 	},
 } satisfies Record<
 	Tab,
@@ -99,8 +122,9 @@ interface AssetsPanelStore {
 export const useAssetsPanelStore = create<AssetsPanelStore>()(
 	persist(
 		(set) => ({
-			activeTab: "media",
-			setActiveTab: (tab) => set({ activeTab: tab }),
+			activeTab: "subtitleEdit",
+			setActiveTab: (tab) =>
+				set({ activeTab: isVisibleTab(tab) ? tab : "subtitleEdit" }),
 			highlightMediaId: null,
 			requestRevealMedia: (mediaId) =>
 				set({ activeTab: "media", highlightMediaId: mediaId }),

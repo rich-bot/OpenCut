@@ -1,20 +1,11 @@
-import type {
-	ParamDefinition,
-	ParamValue,
-	ParamValues,
-} from "@/params";
+import type { ParamDefinition, ParamValue, ParamValues } from "@/params";
 import { MIN_TRANSFORM_SCALE } from "@/animation/transform";
 import type { BlendMode } from "@/rendering";
-import type {
-	ElementType,
-	TimelineElement,
-} from "@/timeline";
+import type { ElementType, TimelineElement } from "@/timeline";
 import { DEFAULTS } from "@/timeline/defaults";
 import { VOLUME_DB_MAX, VOLUME_DB_MIN } from "@/timeline/audio-constants";
-import {
-	CORNER_RADIUS_MAX,
-	CORNER_RADIUS_MIN,
-} from "@/text/background";
+import { CORNER_RADIUS_MAX, CORNER_RADIUS_MIN } from "@/text/background";
+import { editorT } from "@/i18n/editor";
 
 export type ElementParamDefinition<TKey extends string = string> =
 	ParamDefinition<TKey> & {
@@ -46,13 +37,7 @@ export class DefinitionRegistry<TKey extends string, TDefinition> {
 		this.entityName = entityName;
 	}
 
-	register({
-		key,
-		definition,
-	}: {
-		key: TKey;
-		definition: TDefinition;
-	}): void {
+	register({ key, definition }: { key: TKey; definition: TDefinition }): void {
 		this.definitions.set(key, definition);
 	}
 
@@ -74,29 +59,29 @@ export class DefinitionRegistry<TKey extends string, TDefinition> {
 }
 
 const BLEND_MODE_OPTIONS: Array<{ value: BlendMode; label: string }> = [
-	{ value: "normal", label: "Normal" },
-	{ value: "darken", label: "Darken" },
-	{ value: "multiply", label: "Multiply" },
-	{ value: "color-burn", label: "Color Burn" },
-	{ value: "lighten", label: "Lighten" },
-	{ value: "screen", label: "Screen" },
-	{ value: "plus-lighter", label: "Plus Lighter" },
-	{ value: "color-dodge", label: "Color Dodge" },
-	{ value: "overlay", label: "Overlay" },
-	{ value: "soft-light", label: "Soft Light" },
-	{ value: "hard-light", label: "Hard Light" },
-	{ value: "difference", label: "Difference" },
-	{ value: "exclusion", label: "Exclusion" },
-	{ value: "hue", label: "Hue" },
-	{ value: "saturation", label: "Saturation" },
-	{ value: "color", label: "Color" },
-	{ value: "luminosity", label: "Luminosity" },
+	{ value: "normal", label: editorT("options.normal") },
+	{ value: "darken", label: editorT("options.darken") },
+	{ value: "multiply", label: editorT("options.multiply") },
+	{ value: "color-burn", label: editorT("options.color-burn") },
+	{ value: "lighten", label: editorT("options.lighten") },
+	{ value: "screen", label: editorT("options.screen") },
+	{ value: "plus-lighter", label: editorT("options.plus-lighter") },
+	{ value: "color-dodge", label: editorT("options.color-dodge") },
+	{ value: "overlay", label: editorT("options.overlay") },
+	{ value: "soft-light", label: editorT("options.soft-light") },
+	{ value: "hard-light", label: editorT("options.hard-light") },
+	{ value: "difference", label: editorT("options.difference") },
+	{ value: "exclusion", label: editorT("options.exclusion") },
+	{ value: "hue", label: editorT("options.hue") },
+	{ value: "saturation", label: editorT("options.saturation") },
+	{ value: "color", label: editorT("options.color") },
+	{ value: "luminosity", label: editorT("options.luminosity") },
 ];
 
 const visualElementParams: ElementParamDefinition[] = [
 	{
 		key: "transform.positionX",
-		label: "Position X",
+		label: editorT("params.positionX"),
 		type: "number",
 		default: DEFAULTS.element.transform.position.x,
 		min: -100_000,
@@ -104,7 +89,7 @@ const visualElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "transform.positionY",
-		label: "Position Y",
+		label: editorT("params.positionY"),
 		type: "number",
 		default: DEFAULTS.element.transform.position.y,
 		min: -100_000,
@@ -112,7 +97,7 @@ const visualElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "transform.scaleX",
-		label: "Scale X",
+		label: editorT("params.scaleX"),
 		type: "number",
 		default: DEFAULTS.element.transform.scaleX,
 		min: MIN_TRANSFORM_SCALE,
@@ -120,7 +105,7 @@ const visualElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "transform.scaleY",
-		label: "Scale Y",
+		label: editorT("params.scaleY"),
 		type: "number",
 		default: DEFAULTS.element.transform.scaleY,
 		min: MIN_TRANSFORM_SCALE,
@@ -128,7 +113,7 @@ const visualElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "transform.rotate",
-		label: "Rotate",
+		label: editorT("params.rotate"),
 		type: "number",
 		default: DEFAULTS.element.transform.rotate,
 		min: -360,
@@ -137,7 +122,7 @@ const visualElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "opacity",
-		label: "Opacity",
+		label: editorT("params.opacity"),
 		type: "number",
 		default: DEFAULTS.element.opacity,
 		min: 0,
@@ -146,7 +131,7 @@ const visualElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "blendMode",
-		label: "Blend Mode",
+		label: editorT("params.blendMode"),
 		type: "select",
 		default: DEFAULTS.element.blendMode,
 		keyframable: false,
@@ -157,7 +142,7 @@ const visualElementParams: ElementParamDefinition[] = [
 const audioElementParams: ElementParamDefinition[] = [
 	{
 		key: "volume",
-		label: "Volume",
+		label: editorT("params.volume"),
 		type: "number",
 		default: DEFAULTS.element.volume,
 		min: VOLUME_DB_MIN,
@@ -166,7 +151,7 @@ const audioElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "muted",
-		label: "Muted",
+		label: editorT("params.muted"),
 		type: "boolean",
 		default: false,
 		keyframable: false,
@@ -176,21 +161,21 @@ const audioElementParams: ElementParamDefinition[] = [
 const textElementParams: ElementParamDefinition[] = [
 	{
 		key: "content",
-		label: "Content",
+		label: editorT("params.content"),
 		type: "text",
-		default: "Default text",
+		default: editorT("params.defaultText"),
 		keyframable: false,
 	},
 	{
 		key: "fontFamily",
-		label: "Font Family",
+		label: editorT("params.fontFamily"),
 		type: "font",
 		default: "Arial",
 		keyframable: false,
 	},
 	{
 		key: "fontSize",
-		label: "Font Size",
+		label: editorT("params.fontSize"),
 		type: "number",
 		default: 15,
 		min: 1,
@@ -198,59 +183,73 @@ const textElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "color",
-		label: "Color",
+		label: editorT("params.color"),
 		type: "color",
 		default: "#ffffff",
 	},
 	{
+		key: "stroke.color",
+		label: editorT("params.strokeColor"),
+		type: "color",
+		default: "#000000",
+	},
+	{
+		key: "stroke.width",
+		label: editorT("params.strokeWidth"),
+		type: "number",
+		default: 0,
+		min: 0,
+		step: 0.1,
+	},
+	{
 		key: "textAlign",
-		label: "Text Align",
+		label: editorT("params.textAlign"),
 		type: "select",
 		default: "center",
 		keyframable: false,
 		options: [
-			{ value: "left", label: "Left" },
-			{ value: "center", label: "Center" },
-			{ value: "right", label: "Right" },
+			{ value: "left", label: editorT("options.left") },
+			{ value: "center", label: editorT("options.center") },
+			{ value: "right", label: editorT("options.right") },
 		],
 	},
 	{
 		key: "fontWeight",
-		label: "Font Weight",
+		label: editorT("params.fontWeight"),
 		type: "select",
 		default: "normal",
 		keyframable: false,
 		options: [
-			{ value: "normal", label: "Normal" },
-			{ value: "bold", label: "Bold" },
+			{ value: "normal", label: editorT("options.normal") },
+			{ value: "bold", label: editorT("options.bold") },
 		],
 	},
 	{
 		key: "fontStyle",
-		label: "Font Style",
+		label: editorT("params.fontStyle"),
 		type: "select",
 		default: "normal",
 		keyframable: false,
 		options: [
-			{ value: "normal", label: "Normal" },
-			{ value: "italic", label: "Italic" },
+			{ value: "normal", label: editorT("options.normal") },
+			{ value: "italic", label: editorT("options.italic") },
 		],
 	},
 	{
 		key: "textDecoration",
-		label: "Text Decoration",
+		label: editorT("params.textDecoration"),
 		type: "select",
 		default: "none",
 		keyframable: false,
 		options: [
-			{ value: "none", label: "None" },
-			{ value: "underline", label: "Underline" },
-			{ value: "line-through", label: "Line Through" },
+			{ value: "none", label: editorT("options.none") },
+			{ value: "underline", label: editorT("options.underline") },
+			{ value: "line-through", label: editorT("options.lineThrough") },
 		],
 	},
 	{
 		key: "letterSpacing",
-		label: "Letter Spacing",
+		label: editorT("params.letterSpacing"),
 		type: "number",
 		default: DEFAULTS.text.letterSpacing,
 		min: -100,
@@ -258,7 +257,7 @@ const textElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "lineHeight",
-		label: "Line Height",
+		label: editorT("params.lineHeight"),
 		type: "number",
 		default: DEFAULTS.text.lineHeight,
 		min: 0.1,
@@ -266,21 +265,21 @@ const textElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "background.enabled",
-		label: "Background Enabled",
+		label: editorT("params.backgroundEnabled"),
 		type: "boolean",
 		default: DEFAULTS.text.background.enabled,
 		keyframable: false,
 	},
 	{
 		key: "background.color",
-		label: "Background Color",
+		label: editorT("params.backgroundColor"),
 		type: "color",
 		default: DEFAULTS.text.background.color,
 		dependencies: [{ param: "background.enabled", equals: true }],
 	},
 	{
 		key: "background.cornerRadius",
-		label: "Background Radius",
+		label: editorT("params.backgroundRadius"),
 		type: "number",
 		default: DEFAULTS.text.background.cornerRadius,
 		min: CORNER_RADIUS_MIN,
@@ -290,7 +289,7 @@ const textElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "background.paddingX",
-		label: "Background Padding X",
+		label: editorT("params.backgroundPaddingX"),
 		type: "number",
 		default: DEFAULTS.text.background.paddingX,
 		min: 0,
@@ -299,7 +298,7 @@ const textElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "background.paddingY",
-		label: "Background Padding Y",
+		label: editorT("params.backgroundPaddingY"),
 		type: "number",
 		default: DEFAULTS.text.background.paddingY,
 		min: 0,
@@ -308,7 +307,7 @@ const textElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "background.offsetX",
-		label: "Background Offset X",
+		label: editorT("params.backgroundOffsetX"),
 		type: "number",
 		default: DEFAULTS.text.background.offsetX,
 		min: -100_000,
@@ -317,7 +316,7 @@ const textElementParams: ElementParamDefinition[] = [
 	},
 	{
 		key: "background.offsetY",
-		label: "Background Offset Y",
+		label: editorT("params.backgroundOffsetY"),
 		type: "number",
 		default: DEFAULTS.text.background.offsetY,
 		min: -100_000,
@@ -335,7 +334,10 @@ elementParamRegistry.register({
 	key: "video",
 	definition: [...visualElementParams, ...audioElementParams],
 });
-elementParamRegistry.register({ key: "image", definition: visualElementParams });
+elementParamRegistry.register({
+	key: "image",
+	definition: visualElementParams,
+});
 elementParamRegistry.register({
 	key: "text",
 	definition: [...textElementParams, ...visualElementParams],
@@ -435,4 +437,3 @@ export function buildElementParamValues({
 	}
 	return values;
 }
-

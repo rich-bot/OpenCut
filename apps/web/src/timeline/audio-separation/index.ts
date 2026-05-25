@@ -8,6 +8,7 @@ import type {
 	AudioElement,
 	VideoElement,
 } from "../types";
+import { editorT } from "@/i18n/editor";
 
 type MediaAudioState = Pick<MediaAsset, "hasAudio">;
 
@@ -110,10 +111,10 @@ export function getSourceAudioActionLabel({
 	element,
 }: {
 	element: VideoElement;
-}): "Extract audio" | "Recover audio" {
+}): string {
 	return isSourceAudioSeparated({ element })
-		? "Recover audio"
-		: "Extract audio";
+		? editorT("timeline.recoverAudio")
+		: editorT("timeline.extractAudio");
 }
 
 function cloneVolumeAnimations({

@@ -1,4 +1,5 @@
 import type { ShortcutKey } from "@/actions/keybinding";
+import { editorT } from "@/i18n/editor";
 import type { TActionWithOptionalArgs } from "./types";
 
 export type TActionCategory =
@@ -23,134 +24,145 @@ export interface TActionDefinition extends TActionBaseDefinition {
 
 export const ACTIONS = {
 	"toggle-play": {
-		description: "Play/Pause",
+		description: editorT("actions.toggle-play"),
 		category: "playback",
 	},
 	"stop-playback": {
-		description: "Stop playback",
+		description: editorT("actions.stop-playback"),
 		category: "playback",
 	},
 	"seek-forward": {
-		description: "Seek forward 1 second",
+		description: editorT("actions.seek-forward"),
 		category: "playback",
 		args: { seconds: "number" },
 	},
 	"seek-backward": {
-		description: "Seek backward 1 second",
+		description: editorT("actions.seek-backward"),
 		category: "playback",
 		args: { seconds: "number" },
 	},
 	"frame-step-forward": {
-		description: "Frame step forward",
+		description: editorT("actions.frame-step-forward"),
 		category: "navigation",
 	},
 	"frame-step-backward": {
-		description: "Frame step backward",
+		description: editorT("actions.frame-step-backward"),
 		category: "navigation",
 	},
 	"jump-forward": {
-		description: "Jump forward 5 seconds",
+		description: editorT("actions.jump-forward"),
 		category: "navigation",
 		args: { seconds: "number" },
 	},
 	"jump-backward": {
-		description: "Jump backward 5 seconds",
+		description: editorT("actions.jump-backward"),
 		category: "navigation",
 		args: { seconds: "number" },
 	},
 	"goto-start": {
-		description: "Go to timeline start",
+		description: editorT("actions.goto-start"),
 		category: "navigation",
 	},
 	"goto-end": {
-		description: "Go to timeline end",
+		description: editorT("actions.goto-end"),
 		category: "navigation",
 	},
 	split: {
-		description: "Split elements at playhead",
+		description: editorT("actions.split"),
 		category: "editing",
 	},
 	"split-left": {
-		description: "Split and remove left",
+		description: editorT("actions.split-left"),
 		category: "editing",
 	},
 	"split-right": {
-		description: "Split and remove right",
+		description: editorT("actions.split-right"),
 		category: "editing",
 	},
 	"delete-selected": {
-		description: "Delete current selection",
+		description: editorT("actions.delete-selected"),
 		category: "editing",
 	},
 	"copy-selected": {
-		description: "Copy selected elements",
+		description: editorT("actions.copy-selected"),
 		category: "editing",
 	},
 	"paste-copied": {
-		description: "Paste elements at playhead",
+		description: editorT("actions.paste-copied"),
 		category: "editing",
 	},
 	"toggle-snapping": {
-		description: "Toggle snapping",
+		description: editorT("actions.toggle-snapping"),
 		category: "editing",
 	},
 	"toggle-ripple-editing": {
-		description: "Toggle ripple editing",
+		description: editorT("actions.toggle-ripple-editing"),
 		category: "editing",
 	},
 	"toggle-source-audio": {
-		description: "Extract or recover source audio",
+		description: editorT("actions.toggle-source-audio"),
 		category: "editing",
 	},
 	"select-all": {
-		description: "Select all elements",
+		description: editorT("actions.select-all"),
 		category: "selection",
 	},
 	"cancel-interaction": {
-		description: "Cancel current interaction",
+		description: editorT("actions.cancel-interaction"),
 		category: "controls",
 	},
 	"deselect-all": {
-		description: "Deselect all elements",
+		description: editorT("actions.deselect-all"),
 		category: "selection",
 	},
 	"duplicate-selected": {
-		description: "Duplicate selected element",
+		description: editorT("actions.duplicate-selected"),
 		category: "selection",
 	},
 	"toggle-elements-muted-selected": {
-		description: "Mute/unmute selected elements",
+		description: editorT("actions.toggle-elements-muted-selected"),
 		category: "selection",
 	},
 	"toggle-elements-visibility-selected": {
-		description: "Show/hide selected elements",
+		description: editorT("actions.toggle-elements-visibility-selected"),
 		category: "selection",
 	},
 	"toggle-bookmark": {
-		description: "Toggle bookmark at playhead",
+		description: editorT("actions.toggle-bookmark"),
 		category: "timeline",
 	},
 	undo: {
-		description: "Undo",
+		description: editorT("actions.undo"),
 		category: "history",
 	},
 	redo: {
-		description: "Redo",
+		description: editorT("actions.redo"),
 		category: "history",
 	},
 	"remove-media-asset": {
-		description: "Remove media asset",
+		description: editorT("actions.remove-media-asset"),
 		category: "assets",
 		args: { projectId: "string", assetId: "string" },
 	},
 	"remove-media-assets": {
-		description: "Remove media assets",
+		description: editorT("actions.remove-media-assets"),
 		category: "assets",
 		args: { projectId: "string", assetIds: "string[]" },
 	},
 } as const satisfies Record<string, TActionBaseDefinition>;
 
 export type TAction = keyof typeof ACTIONS;
+
+const ACTIONS_REQUIRING_ARGS = new Set<string>([
+	"remove-media-asset",
+	"remove-media-assets",
+]);
+
+export function isActionWithOptionalArgs(
+	value: string,
+): value is TActionWithOptionalArgs {
+	return value in ACTIONS && !ACTIONS_REQUIRING_ARGS.has(value);
+}
 
 const ACTION_DEFAULT_SHORTCUTS = [
 	["toggle-play", ["space", "k"]],

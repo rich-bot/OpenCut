@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type {
 	ParamDefinition,
 	NumberParamDefinition,
@@ -24,6 +25,11 @@ import {
 import { usePropertyDraft } from "../hooks/use-property-draft";
 import { KeyframeToggle } from "./keyframe-toggle";
 import { Textarea } from "@/components/ui/textarea";
+import { editorT } from "@/i18n/editor";
+import { RichTextPreview } from "@/text/components/rich-text-preview";
+import type { RichTextRun } from "@/text/rich-text";
+
+const TEXT_PREVIEW_DEBOUNCE_MS = 120;
 
 export function PropertyParamField({
 	param,
@@ -31,11 +37,17 @@ export function PropertyParamField({
 	onPreview,
 	onCommit,
 	keyframe,
+	richTextRuns,
+	isTextReadOnly = false,
+	onTextSelectionChange,
 }: {
 	param: ParamDefinition;
 	value: ParamValue;
 	onPreview: (value: ParamValue) => void;
 	onCommit: () => void;
+	richTextRuns?: RichTextRun[];
+	isTextReadOnly?: boolean;
+	onTextSelectionChange?: (selection: TextInputSelection | null) => void;
 	keyframe?: {
 		isActive: boolean;
 		isDisabled: boolean;
@@ -50,7 +62,9 @@ export function PropertyParamField({
 					<KeyframeToggle
 						isActive={keyframe.isActive}
 						isDisabled={keyframe.isDisabled}
-						title={`Toggle ${param.label.toLowerCase()} keyframe`}
+						title={editorT("properties.toggleKeyframe", {
+							label: param.label,
+						})}
 						onToggle={keyframe.onToggle}
 					/>
 				) : undefined
@@ -61,21 +75,35 @@ export function PropertyParamField({
 				value={value}
 				onPreview={onPreview}
 				onCommit={onCommit}
+				richTextRuns={richTextRuns}
+				isTextReadOnly={isTextReadOnly}
+				onTextSelectionChange={onTextSelectionChange}
 			/>
 		</SectionField>
 	);
 }
+
+export type TextInputSelection = {
+	start: number;
+	end: number;
+};
 
 function ParamInput({
 	param,
 	value,
 	onPreview,
 	onCommit,
+	richTextRuns,
+	isTextReadOnly,
+	onTextSelectionChange,
 }: {
 	param: ParamDefinition;
 	value: ParamValue;
 	onPreview: (value: ParamValue) => void;
 	onCommit: () => void;
+	richTextRuns?: RichTextRun[];
+	isTextReadOnly?: boolean;
+	onTextSelectionChange?: (selection: TextInputSelection | null) => void;
 }) {
 	if (param.type === "number") {
 		return (
@@ -138,10 +166,13 @@ function ParamInput({
 
 	if (param.type === "text") {
 		return (
-			<Textarea
+			<TextParamField
 				value={String(value)}
-				onChange={(event) => onPreview(event.currentTarget.value)}
-				onBlur={onCommit}
+				onPreview={onPreview}
+				onCommit={onCommit}
+				richTextRuns={richTextRuns}
+				readOnly={isTextReadOnly}
+				onTextSelectionChange={onTextSelectionChange}
 			/>
 		);
 	}
@@ -158,6 +189,157 @@ function ParamInput({
 	}
 
 	return null;
+}
+
+function TextParamField({
+	value,
+	onPreview,
+	onCommit,
+	richTextRuns,
+	readOnly = false,
+	onTextSelectionChange,
+}: {
+	value: string;
+	onPreview: (value: string) => void;
+	onCommit: () => void;
+	richTextRuns?: RichTextRun[];
+	readOnly?: boolean;
+	onTextSelectionChange?: (selection: TextInputSelection | null) => void;
+}) {
+	const [isEditing, setIsEditing] = useState(false);
+	const [draft, setDraft] = useState(value);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const previewTimerRef = useRef<number | null>(null);
+	const latestDraftRef = useRef(value);
+	const previewedValueRef = useRef(value);
+	const lastSelectionRef = useRef<TextInputSelection | null>(null);
+	const isComposingRef = useRef(false);
+	const onPreviewRef = useRef(onPreview);
+
+	useEffect(() => {
+		onPreviewRef.current = onPreview;
+	}, [onPreview]);
+
+	useEffect(() => {
+		if (isEditing) return;
+		latestDraftRef.current = value;
+		previewedValueRef.current = value;
+	}, [isEditing, value]);
+
+	useEffect(() => {
+		return () => {
+			if (previewTimerRef.current) {
+				window.clearTimeout(previewTimerRef.current);
+			}
+		};
+	}, []);
+
+	const clearPreviewTimer = () => {
+		if (!previewTimerRef.current) return;
+		window.clearTimeout(previewTimerRef.current);
+		previewTimerRef.current = null;
+	};
+
+	const flushPreview = (nextValue = latestDraftRef.current) => {
+		clearPreviewTimer();
+		if (nextValue === previewedValueRef.current) return;
+		previewedValueRef.current = nextValue;
+		onPreviewRef.current(nextValue);
+	};
+
+	const schedulePreview = (nextValue: string) => {
+		if (isComposingRef.current) return;
+		clearPreviewTimer();
+		previewTimerRef.current = window.setTimeout(() => {
+			flushPreview(nextValue);
+		}, TEXT_PREVIEW_DEBOUNCE_MS);
+	};
+
+	const reportSelection = (textarea: HTMLTextAreaElement | null) => {
+		if (!onTextSelectionChange || !textarea) return;
+
+		const start = Math.min(textarea.selectionStart, textarea.selectionEnd);
+		const end = Math.max(textarea.selectionStart, textarea.selectionEnd);
+		const nextSelection = start === end ? null : { start, end };
+		const previousSelection = lastSelectionRef.current;
+		if (
+			previousSelection?.start === nextSelection?.start &&
+			previousSelection?.end === nextSelection?.end
+		) {
+			return;
+		}
+		lastSelectionRef.current = nextSelection;
+		onTextSelectionChange(nextSelection);
+	};
+
+	const displayValue = isEditing ? draft : value;
+
+	return (
+		<div className="relative">
+			{richTextRuns ? (
+				<RichTextPreview
+					content={displayValue}
+					runs={richTextRuns}
+					className="absolute inset-0 min-h-[80px] overflow-hidden px-3 py-2 text-sm leading-5"
+				/>
+			) : null}
+			<Textarea
+				ref={textareaRef}
+				value={displayValue}
+				readOnly={readOnly}
+				className={
+					richTextRuns
+						? "relative min-h-[80px] bg-transparent text-transparent caret-foreground selection:bg-primary/50 selection:text-transparent"
+						: undefined
+				}
+				onFocus={(event) => {
+					setIsEditing(true);
+					setDraft(value);
+					latestDraftRef.current = value;
+					previewedValueRef.current = value;
+					reportSelection(event.currentTarget);
+				}}
+				onChange={(event) => {
+					if (readOnly) {
+						reportSelection(event.currentTarget);
+						return;
+					}
+					const nextDraft = event.currentTarget.value;
+					setDraft(nextDraft);
+					latestDraftRef.current = nextDraft;
+					schedulePreview(nextDraft);
+					reportSelection(event.currentTarget);
+				}}
+				onSelect={(event) => reportSelection(event.currentTarget)}
+				onMouseUp={() => reportSelection(textareaRef.current)}
+				onKeyUp={() => reportSelection(textareaRef.current)}
+				onCompositionStart={() => {
+					if (readOnly) return;
+					isComposingRef.current = true;
+					clearPreviewTimer();
+				}}
+				onCompositionEnd={(event) => {
+					if (readOnly) {
+						reportSelection(event.currentTarget);
+						return;
+					}
+					isComposingRef.current = false;
+					const nextDraft = event.currentTarget.value;
+					setDraft(nextDraft);
+					latestDraftRef.current = nextDraft;
+					schedulePreview(nextDraft);
+					reportSelection(event.currentTarget);
+				}}
+				onBlur={() => {
+					if (!readOnly) {
+						flushPreview();
+						onCommit();
+					}
+					setIsEditing(false);
+				}}
+			/>
+		</div>
+	);
 }
 
 function NumberParamField({
@@ -180,9 +362,7 @@ function NumberParamField({
 		);
 
 	const previewFromDisplay = (displayVal: number) => {
-		const clamped = clampDisplayValue(
-			snapToStep({ value: displayVal, step }),
-		);
+		const clamped = clampDisplayValue(snapToStep({ value: displayVal, step }));
 		onPreview(clamped / displayMultiplier);
 	};
 

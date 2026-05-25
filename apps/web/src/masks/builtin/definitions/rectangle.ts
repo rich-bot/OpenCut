@@ -8,6 +8,7 @@ import {
 	getStrokeOffset,
 	rotatePoint,
 } from "../box-like";
+import { editorT } from "@/i18n/editor";
 
 function buildRectanglePath({
 	centerX,
@@ -47,7 +48,7 @@ function buildRectanglePath({
 
 export const rectangleMaskDefinition: MaskDefinition<"rectangle"> = {
 	type: "rectangle",
-	name: "Rectangle",
+	name: editorT("masks.rectangle"),
 	features: {
 		hasPosition: true,
 		hasRotation: true,

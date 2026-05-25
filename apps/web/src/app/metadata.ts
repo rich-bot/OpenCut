@@ -1,6 +1,16 @@
 import type { Metadata } from "next";
 import { SITE_INFO, SITE_URL } from "@/site/brand";
 
+const appBasePath = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(
+	/\/+$/,
+	"",
+);
+
+function withMetadataBasePath(path: string) {
+	if (!appBasePath || !path.startsWith("/")) return path;
+	return `${appBasePath}${path}`;
+}
+
 export const baseMetaData: Metadata = {
 	metadataBase: new URL(SITE_URL),
 	title: SITE_INFO.title,
@@ -37,50 +47,78 @@ export const baseMetaData: Metadata = {
 	},
 	icons: {
 		icon: [
-			{ url: "/favicon.ico" },
-			{ url: "/icons/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-			{ url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-			{ url: "/icons/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+			{ url: withMetadataBasePath("/favicon.ico") },
+			{
+				url: withMetadataBasePath("/icons/favicon-16x16.png"),
+				sizes: "16x16",
+				type: "image/png",
+			},
+			{
+				url: withMetadataBasePath("/icons/favicon-32x32.png"),
+				sizes: "32x32",
+				type: "image/png",
+			},
+			{
+				url: withMetadataBasePath("/icons/favicon-96x96.png"),
+				sizes: "96x96",
+				type: "image/png",
+			},
 		],
 		apple: [
-			{ url: "/icons/apple-icon-57x57.png", sizes: "57x57", type: "image/png" },
-			{ url: "/icons/apple-icon-60x60.png", sizes: "60x60", type: "image/png" },
-			{ url: "/icons/apple-icon-72x72.png", sizes: "72x72", type: "image/png" },
-			{ url: "/icons/apple-icon-76x76.png", sizes: "76x76", type: "image/png" },
 			{
-				url: "/icons/apple-icon-114x114.png",
+				url: withMetadataBasePath("/icons/apple-icon-57x57.png"),
+				sizes: "57x57",
+				type: "image/png",
+			},
+			{
+				url: withMetadataBasePath("/icons/apple-icon-60x60.png"),
+				sizes: "60x60",
+				type: "image/png",
+			},
+			{
+				url: withMetadataBasePath("/icons/apple-icon-72x72.png"),
+				sizes: "72x72",
+				type: "image/png",
+			},
+			{
+				url: withMetadataBasePath("/icons/apple-icon-76x76.png"),
+				sizes: "76x76",
+				type: "image/png",
+			},
+			{
+				url: withMetadataBasePath("/icons/apple-icon-114x114.png"),
 				sizes: "114x114",
 				type: "image/png",
 			},
 			{
-				url: "/icons/apple-icon-120x120.png",
+				url: withMetadataBasePath("/icons/apple-icon-120x120.png"),
 				sizes: "120x120",
 				type: "image/png",
 			},
 			{
-				url: "/icons/apple-icon-144x144.png",
+				url: withMetadataBasePath("/icons/apple-icon-144x144.png"),
 				sizes: "144x144",
 				type: "image/png",
 			},
 			{
-				url: "/icons/apple-icon-152x152.png",
+				url: withMetadataBasePath("/icons/apple-icon-152x152.png"),
 				sizes: "152x152",
 				type: "image/png",
 			},
 			{
-				url: "/icons/apple-icon-180x180.png",
+				url: withMetadataBasePath("/icons/apple-icon-180x180.png"),
 				sizes: "180x180",
 				type: "image/png",
 			},
 		],
-		shortcut: ["/favicon.ico"],
+		shortcut: [withMetadataBasePath("/favicon.ico")],
 	},
 	appleWebApp: {
 		capable: true,
 		title: SITE_INFO.title,
 	},
-	manifest: "/manifest.json",
+	manifest: withMetadataBasePath("/manifest.json"),
 	other: {
-		"msapplication-config": "/browserconfig.xml",
+		"msapplication-config": withMetadataBasePath("/browserconfig.xml"),
 	},
 };

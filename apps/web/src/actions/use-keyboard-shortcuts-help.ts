@@ -2,11 +2,16 @@
 
 import { useMemo } from "react";
 import { useKeybindingsStore } from "@/actions/keybindings-store";
-import { ACTIONS, type TActionWithOptionalArgs } from "@/actions";
+import {
+	ACTIONS,
+	type TActionCategory,
+	type TActionWithOptionalArgs,
+} from "@/actions";
 import {
 	getPlatformAlternateKey,
 	getPlatformSpecialKey,
 } from "@/utils/platform";
+import { editorT, type EditorMessageKey } from "@/i18n/editor";
 
 export interface KeyboardShortcut {
 	id: string;
@@ -35,6 +40,10 @@ function formatKey({ key }: { key: string }): string {
 		.replace("-", "+");
 }
 
+function formatCategory({ category }: { category: TActionCategory }): string {
+	return editorT(`shortcuts.category.${category}` as EditorMessageKey);
+}
+
 export function useKeyboardShortcutsHelp() {
 	const { keybindings } = useKeybindingsStore();
 
@@ -58,7 +67,7 @@ export function useKeyboardShortcutsHelp() {
 				id: action,
 				keys,
 				description: actionDef.description,
-				category: actionDef.category,
+				category: formatCategory({ category: actionDef.category }),
 				action,
 			});
 		}

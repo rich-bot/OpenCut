@@ -8,12 +8,13 @@ import { effectPreviewService } from "@/services/renderer/effect-preview";
 import { useEditor } from "@/editor/use-editor";
 import { buildEffectElement } from "@/timeline/element-utils";
 import type { EffectDefinition } from "@/effects/types";
+import { editorT } from "@/i18n/editor";
 
 export function EffectsView() {
 	const effects = effectsRegistry.getAll();
 
 	return (
-		<PanelView title="Effects">
+		<PanelView title={editorT("properties.tab.effects")}>
 			<EffectsGrid effects={effects} />
 		</PanelView>
 	);

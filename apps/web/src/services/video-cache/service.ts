@@ -281,6 +281,7 @@ export class VideoCache {
 			const sink = new CanvasSink(videoTrack, {
 				poolSize: 3,
 				fit: "contain",
+				alpha: mediaId.startsWith("video-sticker:"),
 			});
 
 			this.sinks.set(mediaId, {

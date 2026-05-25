@@ -126,6 +126,9 @@ function buildTrackNodes({
 				nodes.push(
 					new StickerNode({
 						stickerId: element.stickerId,
+						assetType: element.assetType,
+						sourceUrl: element.sourceUrl,
+						sourceDuration: element.stickerSourceDuration,
 						intrinsicWidth: element.intrinsicWidth,
 						intrinsicHeight: element.intrinsicHeight,
 						duration: element.duration,

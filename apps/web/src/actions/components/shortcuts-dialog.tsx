@@ -16,6 +16,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { editorT } from "@/i18n/editor";
 
 export function ShortcutsDialog({
 	isOpen,
@@ -57,7 +58,10 @@ export function ShortcutsDialog({
 				});
 				if (conflict) {
 					toast.error(
-						`Key "${keyString}" is already bound to "${conflict.existingAction}"`,
+						editorT("shortcuts.conflict", {
+							key: keyString,
+							action: conflict.existingAction,
+						}),
 					);
 					setRecordingShortcut(null);
 					return;
@@ -110,7 +114,7 @@ export function ShortcutsDialog({
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
 			<DialogContent className="flex max-h-[80vh] max-w-2xl flex-col p-0">
 				<DialogHeader>
-					<DialogTitle>Keyboard shortcuts</DialogTitle>
+					<DialogTitle>{editorT("shortcuts.title")}</DialogTitle>
 				</DialogHeader>
 
 				<DialogBody className="scrollbar-thin grow overflow-y-auto">
@@ -140,7 +144,7 @@ export function ShortcutsDialog({
 				</DialogBody>
 				<DialogFooter>
 					<Button variant="destructive" onClick={resetToDefaults}>
-						Reset to default
+						{editorT("shortcuts.resetToDefault")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
@@ -193,7 +197,9 @@ function ShortcutItem({
 							})}
 						</div>
 						{index < displayKeys.length - 1 && (
-							<span className="text-muted-foreground text-xs">or</span>
+							<span className="text-muted-foreground text-xs">
+								{editorT("shortcuts.or")}
+							</span>
 						)}
 					</div>
 				))}
@@ -223,7 +229,9 @@ function EditableShortcutKey({
 			size="sm"
 			onClick={handleClick}
 			title={
-				isRecording ? "Press any key combination..." : "Click to edit shortcut"
+				isRecording
+					? editorT("shortcuts.pressAnyKey")
+					: editorT("shortcuts.clickToEdit")
 			}
 		>
 			{children}

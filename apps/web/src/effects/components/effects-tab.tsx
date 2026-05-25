@@ -6,6 +6,7 @@ import type { Effect } from "@/effects/types";
 import type { EffectElement, VisualElement } from "@/timeline";
 import { effectsRegistry } from "@/effects";
 import { useEditor } from "@/editor/use-editor";
+import { editorT } from "@/i18n/editor";
 import { useElementPreview } from "@/timeline/hooks/use-element-preview";
 import {
 	Section,
@@ -56,7 +57,7 @@ export function StandaloneEffectTab({
 	return (
 		<div className="flex flex-col h-full">
 			<div className="border-b px-3.5 h-11 shrink-0 flex items-center">
-				<SectionTitle>Effect</SectionTitle>
+				<SectionTitle>{editorT("effects.singleTitle")}</SectionTitle>
 			</div>
 			<EffectSection
 				effect={effect}
@@ -143,7 +144,7 @@ export function ClipEffectsTab({
 	return (
 		<div className="flex flex-col h-full">
 			<div className="border-b px-3.5 h-11 shrink-0 flex items-center">
-				<SectionTitle>Effects</SectionTitle>
+				<SectionTitle>{editorT("effects.listTitle")}</SectionTitle>
 			</div>
 			{effects.length === 0 ? (
 				<EmptyView />
@@ -214,9 +215,11 @@ function EmptyView() {
 				strokeWidth={1}
 			/>
 			<div className="flex flex-col gap-2">
-				<h3 className="font-medium text-foreground">No effects</h3>
+				<h3 className="font-medium text-foreground">
+					{editorT("effects.emptyTitle")}
+				</h3>
 				<p className="text-muted-foreground text-sm text-balance max-w-44">
-					Add effects to this layer from the Assets panel.
+					{editorT("effects.emptyDescription")}
 				</p>
 			</div>
 			<Button
@@ -224,7 +227,7 @@ function EmptyView() {
 				size="sm"
 				onClick={() => setActiveTab("effects")}
 			>
-				Open effects
+				{editorT("effects.open")}
 			</Button>
 		</div>
 	);

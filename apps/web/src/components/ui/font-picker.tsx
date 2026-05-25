@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback, type CSSProperties } from "react";
+import {
+	useState,
+	useMemo,
+	useRef,
+	useEffect,
+	useCallback,
+	type CSSProperties,
+} from "react";
 import { List, type RowComponentProps } from "react-window";
 import {
 	Popover,
@@ -13,6 +20,7 @@ import { loadFullFont } from "@/fonts/google-fonts";
 import { SYSTEM_FONTS } from "@/fonts/system-fonts";
 import type { FontAtlas, FontAtlasEntry } from "@/fonts/types";
 import { useFontAtlas } from "@/fonts/use-font-atlas";
+import { withBasePath } from "@/utils/base-path";
 import { cn } from "@/utils/ui";
 import { ChevronDown, Search } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -47,7 +55,12 @@ export function FontPicker({
 	const [search, setSearch] = useState("");
 	const [activeTab, setActiveTab] = useState<FontTab>("all");
 	const searchInputRef = useRef<HTMLInputElement>(null);
-	const { atlas, status, fontNames, retry: handleRetry } = useFontAtlas({ open });
+	const {
+		atlas,
+		status,
+		fontNames,
+		retry: handleRetry,
+	} = useFontAtlas({ open });
 
 	const filteredFonts = useMemo(() => {
 		if (!search) return fontNames;
@@ -187,6 +200,7 @@ export function FontPicker({
 }
 
 function FontSpritePreview({ entry }: { entry: FontAtlasEntry }) {
+	const chunkUrl = withBasePath(`/fonts/font-chunk-${entry.ch}.avif`);
 	return (
 		<div
 			className="shrink-0"
@@ -194,10 +208,10 @@ function FontSpritePreview({ entry }: { entry: FontAtlasEntry }) {
 				width: entry.w,
 				height: ROW_HEIGHT,
 				backgroundColor: "currentColor",
-				WebkitMaskImage: `url(/fonts/font-chunk-${entry.ch}.avif)`,
+				WebkitMaskImage: `url(${chunkUrl})`,
 				WebkitMaskPosition: `-${entry.x}px -${entry.y}px`,
 				WebkitMaskRepeat: "no-repeat",
-				maskImage: `url(/fonts/font-chunk-${entry.ch}.avif)`,
+				maskImage: `url(${chunkUrl})`,
 				maskPosition: `-${entry.x}px -${entry.y}px`,
 				maskRepeat: "no-repeat",
 				transform: `scale(${PREVIEW_SCALE})`,
@@ -246,7 +260,10 @@ function FontRow({
 		>
 			<div className="min-w-0 overflow-hidden">
 				{isSystemFont ? (
-					<span className="text-xl text-foreground/85" style={{ fontFamily: fontName }}>
+					<span
+						className="text-xl text-foreground/85"
+						style={{ fontFamily: fontName }}
+					>
 						{fontName}
 					</span>
 				) : (

@@ -15,7 +15,10 @@ import { UpdateProjectSettingsCommand } from "@/commands/project";
 import { DEFAULT_BACKGROUND_COLOR } from "@/background/color";
 import { DEFAULT_CANVAS_SIZE } from "@/canvas/sizes";
 import { DEFAULT_FPS } from "@/fps/defaults";
-import { buildDefaultScene, getProjectDurationFromScenes } from "@/timeline/scenes";
+import {
+	buildDefaultScene,
+	getProjectDurationFromScenes,
+} from "@/timeline/scenes";
 import { buildScene } from "@/services/renderer/scene-builder";
 import { CanvasRenderer } from "@/services/renderer/canvas-renderer";
 import {
@@ -29,6 +32,7 @@ import { DEFAULTS } from "@/timeline/defaults";
 import { getElementFontFamilies } from "@/timeline/element-utils";
 import { getRaisedProjectFpsForImportedMedia } from "@/fps/utils";
 import type { MediaAsset } from "@/media/types";
+import { editorT } from "@/i18n/editor";
 
 export interface MigrationState {
 	isMigrating: boolean;
@@ -80,7 +84,10 @@ export class ProjectManager {
 	}
 
 	async createNewProject({ name }: { name: string }): Promise<string> {
-		const mainScene = buildDefaultScene({ name: "Main scene", isMain: true });
+		const mainScene = buildDefaultScene({
+			name: editorT("scene.main"),
+			isMain: true,
+		});
 		const newProject: TProject = {
 			metadata: {
 				id: generateUUID(),
@@ -120,7 +127,7 @@ export class ProjectManager {
 
 			return newProject.metadata.id;
 		} catch (error) {
-			toast.error("Failed to save new project");
+			toast.error("保存新项目失败");
 			throw error;
 		}
 	}
@@ -326,7 +333,7 @@ export class ProjectManager {
 			const result = await storageService.loadProject({ id });
 			if (!result) {
 				toast.error("Project not found", {
-					description: "Please try again",
+					description: "请稍后重试",
 				});
 				return;
 			}
@@ -350,9 +357,8 @@ export class ProjectManager {
 			this.updateMetadata(updatedProject);
 		} catch (error) {
 			console.error("Failed to rename project:", error);
-			toast.error("Failed to rename project", {
-				description:
-					error instanceof Error ? error.message : "Please try again",
+			toast.error("重命名项目失败", {
+				description: error instanceof Error ? error.message : "请稍后重试",
 			});
 		}
 	}

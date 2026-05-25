@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { generateUUID } from "@/utils/id";
 import type { NormalizedCubicBezier } from "@/animation/types";
 import type { EasingPreset } from "./easing-presets";
+import { editorT } from "@/i18n/editor";
 
 const STORAGE_KEY = "graph-editor-presets";
 
@@ -86,7 +87,7 @@ export function savePreset({ value }: { value: NormalizedCubicBezier }): void {
 			...current,
 			{
 				id: generateUUID(),
-				label: `Custom ${current.length + 1}`,
+				label: editorT("graph.customPreset", { count: current.length + 1 }),
 				value,
 				isCustom: true,
 			},
@@ -96,6 +97,8 @@ export function savePreset({ value }: { value: NormalizedCubicBezier }): void {
 }
 
 export function removePreset({ id }: { id: string }): void {
-	writeToStorage({ presets: getSnapshot().filter((preset) => preset.id !== id) });
+	writeToStorage({
+		presets: getSnapshot().filter((preset) => preset.id !== id),
+	});
 	notify();
 }

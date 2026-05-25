@@ -141,6 +141,9 @@ export interface TextElement extends BaseTimelineElement {
 export interface StickerElement extends BaseTimelineElement {
 	type: "sticker";
 	stickerId: string;
+	assetType?: "image" | "video";
+	sourceUrl?: string;
+	stickerSourceDuration?: number;
 	/** Natural dimensions of the sticker asset, stored at insert time. Used by renderer and preview bounds to avoid split-brain geometry. */
 	intrinsicWidth?: number;
 	intrinsicHeight?: number;

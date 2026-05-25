@@ -147,12 +147,18 @@ export function buildStickerElement({
 	stickerId,
 	name,
 	startTime,
+	assetType,
+	sourceUrl,
+	sourceDuration,
 	intrinsicWidth,
 	intrinsicHeight,
 }: {
 	stickerId: string;
 	name?: string;
 	startTime: MediaTime;
+	assetType?: "image" | "video";
+	sourceUrl?: string;
+	sourceDuration?: number;
 	intrinsicWidth?: number;
 	intrinsicHeight?: number;
 }): CreateStickerElement {
@@ -162,6 +168,9 @@ export function buildStickerElement({
 		type: "sticker",
 		name: name ?? stickerNameFromId,
 		stickerId,
+		assetType,
+		sourceUrl,
+		stickerSourceDuration: sourceDuration,
 		intrinsicWidth,
 		intrinsicHeight,
 		duration: DEFAULT_NEW_ELEMENT_DURATION,
@@ -393,7 +402,10 @@ export function getElementFontFamilies({
 	const families = new Set<string>();
 	for (const track of [...tracks.overlay, tracks.main, ...tracks.audio]) {
 		for (const element of track.elements) {
-			if (element.type === "text" && typeof element.params.fontFamily === "string") {
+			if (
+				element.type === "text" &&
+				typeof element.params.fontFamily === "string"
+			) {
 				families.add(element.params.fontFamily);
 			}
 			if ("masks" in element) {

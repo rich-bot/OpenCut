@@ -1,7 +1,8 @@
 import type { SceneTracks, TimelineElement, VideoTrack } from "@/timeline";
 import { type MediaTime, ZERO_MEDIA_TIME } from "@/wasm";
+import { editorT } from "@/i18n/editor";
 
-export const MAIN_TRACK_NAME = "Main Track";
+export const MAIN_TRACK_NAME = editorT("track.main");
 
 export function getEarliestMainTrackElement({
 	mainTrack,

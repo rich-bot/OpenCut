@@ -36,7 +36,11 @@ import {
 	type ResolvedGraphicNodeState,
 } from "./nodes/graphic-node";
 import { ImageNode, loadImageSource } from "./nodes/image-node";
-import { StickerNode, loadStickerSource } from "./nodes/sticker-node";
+import {
+	StickerNode,
+	loadStickerSource,
+	loadStickerVideoFrame,
+} from "./nodes/sticker-node";
 import { TextNode, type ResolvedTextNodeState } from "./nodes/text-node";
 import { VideoNode } from "./nodes/video-node";
 import type {
@@ -205,7 +209,9 @@ async function resolveVideoNode({
 	const frame = await videoCache.getFrameAt({
 		mediaId: node.params.mediaId,
 		file: node.params.file,
-		time: mediaTimeToSeconds({ time: roundMediaTime({ time: sourceTimeTicks }) }),
+		time: mediaTimeToSeconds({
+			time: roundMediaTime({ time: sourceTimeTicks }),
+		}),
 	});
 	if (!frame) {
 		return null;
@@ -265,7 +271,66 @@ async function resolveStickerNode({
 	node: StickerNode;
 	context: ResolveContext;
 }): Promise<ResolvedVisualSourceNodeState | null> {
-	const source = await loadStickerSource({ stickerId: node.params.stickerId });
+	if (
+		context.time < node.params.timeOffset ||
+		context.time >= node.params.timeOffset + node.params.duration
+	) {
+		return null;
+	}
+
+	if (node.params.assetType === "video" && node.params.sourceUrl) {
+		const clipTime = context.time - node.params.timeOffset;
+		const clipSeconds = mediaTimeToSeconds({
+			time: roundMediaTime({ time: clipTime }),
+		});
+		const sourceDuration = Math.max(0, node.params.sourceDuration ?? 0);
+		const sourceTime =
+			sourceDuration > 0 ? clipSeconds % sourceDuration : clipSeconds;
+
+		let frame: Awaited<ReturnType<typeof loadStickerVideoFrame>>;
+		try {
+			frame = await loadStickerVideoFrame({
+				stickerId: node.params.stickerId,
+				sourceUrl: node.params.sourceUrl,
+				time: sourceTime,
+			});
+		} catch (error) {
+			console.warn("Failed to resolve video sticker for preview:", error);
+			return null;
+		}
+
+		if (!frame) {
+			return null;
+		}
+
+		const sourceWidth = node.params.intrinsicWidth ?? frame.canvas.width;
+		const sourceHeight = node.params.intrinsicHeight ?? frame.canvas.height;
+		const visualState = resolveVisualState({
+			params: node.params,
+			context,
+			sourceWidth,
+			sourceHeight,
+		});
+		if (!visualState) {
+			return null;
+		}
+
+		return {
+			...visualState,
+			source: frame.canvas,
+			sourceWidth,
+			sourceHeight,
+		};
+	}
+
+	let source: Awaited<ReturnType<typeof loadStickerSource>>;
+	try {
+		source = await loadStickerSource({ stickerId: node.params.stickerId });
+	} catch (error) {
+		console.warn("Failed to resolve sticker for preview:", error);
+		return null;
+	}
+
 	const sourceWidth = node.params.intrinsicWidth ?? source.width;
 	const sourceHeight = node.params.intrinsicHeight ?? source.height;
 	const visualState = resolveVisualState({
@@ -426,7 +491,9 @@ async function resolveBackdropSource({
 		const frame = await videoCache.getFrameAt({
 			mediaId: node.params.mediaId,
 			file: node.params.file,
-			time: mediaTimeToSeconds({ time: roundMediaTime({ time: sourceTimeTicks }) }),
+			time: mediaTimeToSeconds({
+				time: roundMediaTime({ time: sourceTimeTicks }),
+			}),
 		});
 		if (!frame) {
 			return null;

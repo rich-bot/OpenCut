@@ -3,6 +3,7 @@ import type { TTimelineViewState } from "@/project/types";
 import type { BlendMode, Transform } from "@/rendering";
 import { ZERO_MEDIA_TIME } from "@/wasm";
 import type { TextElement } from "./types";
+import { editorT } from "@/i18n/editor";
 
 const defaultTransform: Transform = {
 	scaleX: 1,
@@ -30,13 +31,13 @@ const defaultTextBackground = {
 
 const defaultTextElement: Omit<TextElement, "id"> = {
 	type: "text",
-	name: "Text",
+	name: editorT("properties.tab.text"),
 	duration: DEFAULT_NEW_ELEMENT_DURATION,
 	startTime: ZERO_MEDIA_TIME,
 	trimStart: ZERO_MEDIA_TIME,
 	trimEnd: ZERO_MEDIA_TIME,
 	params: {
-		content: "Default text",
+		content: editorT("params.defaultText"),
 		fontSize: 15,
 		fontFamily: "Arial",
 		color: "#ffffff",

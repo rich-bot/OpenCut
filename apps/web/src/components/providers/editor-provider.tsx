@@ -14,13 +14,19 @@ import {
 	initializeGpuRenderer,
 	isGpuAvailable,
 } from "@/services/renderer/gpu-renderer";
+import { editorT } from "@/i18n/editor";
 
 interface EditorProviderProps {
 	projectId: string;
+	isEmbedded?: boolean;
 	children: React.ReactNode;
 }
 
-export function EditorProvider({ projectId, children }: EditorProviderProps) {
+export function EditorProvider({
+	projectId,
+	isEmbedded = false,
+	children,
+}: EditorProviderProps) {
 	const activeProject = useEditor((e) => e.project.getActiveOrNull());
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(true);
@@ -57,11 +63,15 @@ export function EditorProvider({ projectId, children }: EditorProviderProps) {
 				if (isNotFound) {
 					try {
 						const newProjectId = await editor.project.createNewProject({
-							name: "Untitled Project",
+							name: editorT("project.defaultName"),
 						});
-						router.replace(`/editor/${newProjectId}`);
+						router.replace(
+							isEmbedded
+								? `/embed/editor/${newProjectId}`
+								: `/editor/${newProjectId}`,
+						);
 					} catch (_createErr) {
-						setError("Failed to create project");
+						setError(editorT("project.createError"));
 						setIsLoading(false);
 					}
 				} else {
@@ -71,9 +81,7 @@ export function EditorProvider({ projectId, children }: EditorProviderProps) {
 						delete (window as Window & { __wasmPanic?: string }).__wasmPanic;
 						setError(wasmPanic);
 					} else {
-						setError(
-							err instanceof Error ? err.message : "Failed to load project",
-						);
+						setError(err instanceof Error ? err.message : "加载项目失败");
 					}
 					setIsLoading(false);
 				}
@@ -85,7 +93,7 @@ export function EditorProvider({ projectId, children }: EditorProviderProps) {
 		return () => {
 			cancelled = true;
 		};
-	}, [projectId, router]);
+	}, [isEmbedded, projectId, router]);
 
 	if (error) {
 		return (
@@ -102,7 +110,7 @@ export function EditorProvider({ projectId, children }: EditorProviderProps) {
 			<div className="bg-background flex h-screen w-screen items-center justify-center">
 				<div className="flex flex-col items-center gap-4">
 					<Loader2 className="text-muted-foreground size-8 animate-spin" />
-					<p className="text-muted-foreground text-sm">Loading project...</p>
+					<p className="text-muted-foreground text-sm">正在加载项目...</p>
 				</div>
 			</div>
 		);
@@ -113,7 +121,7 @@ export function EditorProvider({ projectId, children }: EditorProviderProps) {
 			<div className="bg-background flex h-screen w-screen items-center justify-center">
 				<div className="flex flex-col items-center gap-4">
 					<Loader2 className="text-muted-foreground size-8 animate-spin" />
-					<p className="text-muted-foreground text-sm">Exiting project...</p>
+					<p className="text-muted-foreground text-sm">正在退出项目...</p>
 				</div>
 			</div>
 		);

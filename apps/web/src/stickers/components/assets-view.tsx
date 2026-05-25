@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Play } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEditor } from "@/editor/use-editor";
+import { editorT } from "@/i18n/editor";
 import { resolveStickerIntrinsicSize } from "@/stickers";
 import {
 	buildGraphicElement,
@@ -26,9 +28,7 @@ import type {
 } from "@/stickers";
 import { useStickersStore } from "@/stickers/stickers-store";
 import { cn } from "@/utils/ui";
-import {
-	HappyIcon,
-} from "@hugeicons/core-free-icons";
+import { HappyIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 export function StickersView() {
@@ -55,7 +55,7 @@ export function StickersView() {
 				<Input
 					size="sm"
 					variant="default"
-					placeholder="Search..."
+					placeholder={editorT("stickers.searchPlaceholder")}
 					value={searchQuery}
 					onChange={(e) => {
 						setSearchQuery({ query: e.target.value });
@@ -79,7 +79,7 @@ export function StickersView() {
 				variant="underline"
 				className="mt-2 flex min-h-0 flex-1 flex-col"
 			>
-				<TabsList aria-label="Sticker categories">
+				<TabsList aria-label={editorT("stickers.categoriesLabel")}>
 					{Object.entries(STICKER_CATEGORIES).map(([key, label]) => (
 						<TabsTrigger key={key} value={key}>
 							{label}
@@ -141,7 +141,7 @@ function EmptyView({ message }: { message: string }) {
 				className="text-muted-foreground size-10"
 			/>
 			<div className="flex flex-col gap-2 text-center">
-				<p className="text-lg font-medium">No stickers found</p>
+				<p className="text-lg font-medium">{editorT("stickers.noFound")}</p>
 				<p className="text-muted-foreground text-sm text-balance">{message}</p>
 			</div>
 		</div>
@@ -205,7 +205,9 @@ function StickersContentView() {
 					{isRegionSearch && <RegionBanner region={regionLabel} />}
 					<div className="flex items-center justify-between">
 						<span className="text-muted-foreground text-sm">
-							{searchResults.total} results
+							{editorT("stickers.resultCount", {
+								count: searchResults.total,
+							})}
 						</span>
 					</div>
 					<StickerGrid items={searchResults.items} />
@@ -215,7 +217,11 @@ function StickersContentView() {
 
 		// "all" tab search — sections are in browseContent, fall through to section rendering below
 		if (selectedCategory !== "all" && searchQuery) {
-			return <EmptyView message={`No stickers found for "${searchQuery}"`} />;
+			return (
+				<EmptyView
+					message={editorT("stickers.noFoundFor", { query: searchQuery })}
+				/>
+			);
 		}
 	}
 
@@ -233,10 +239,12 @@ function StickersContentView() {
 			<EmptyView
 				message={
 					viewMode === "search"
-						? `No stickers found for "${searchQuery}"`
+						? editorT("stickers.noFoundFor", { query: searchQuery })
 						: selectedCategory === "all"
-							? "No stickers available yet."
-							: `No stickers available in ${categoryLabel.toLowerCase()} yet.`
+							? editorT("stickers.noAvailable")
+							: editorT("stickers.noAvailableInCategory", {
+									category: categoryLabel,
+								})
 				}
 			/>
 		);
@@ -288,7 +296,7 @@ function StickerSection({
 								size="sm"
 								className="h-auto gap-1 p-0 text-xs text-muted-foreground"
 							>
-								Clear
+								{editorT("stickers.clearRecent")}
 							</Button>
 						)}
 
@@ -301,7 +309,7 @@ function StickerSection({
 									onSeeAll(section.action?.category as StickerCategory);
 								}}
 							>
-								See all
+								{editorT("stickers.seeAll")}
 							</Button>
 						)}
 					</div>
@@ -343,7 +351,12 @@ function StickerItem({
 
 	const displayName = item.name;
 	const shapePreset =
-		item.provider === "shapes" ? parseShapeStickerId({ stickerId: item.id }) : null;
+		item.provider === "shapes"
+			? parseShapeStickerId({ stickerId: item.id })
+			: null;
+	const assetType = item.assetType ?? "image";
+	const sourceUrl = item.sourceUrl;
+	const sourceDuration = item.sourceDuration;
 
 	const handleAdd = async () => {
 		setIsAdding(true);
@@ -367,6 +380,9 @@ function StickerItem({
 					stickerId: item.id,
 					name: item.name,
 					startTime: currentTime,
+					assetType,
+					sourceUrl,
+					sourceDuration,
 					intrinsicWidth,
 					intrinsicHeight,
 				});
@@ -380,14 +396,14 @@ function StickerItem({
 			addToRecentStickers({ stickerId: item.id });
 		} catch (error) {
 			console.error("Failed to add sticker:", error);
-			toast.error("Failed to add sticker to timeline");
+			toast.error(editorT("stickers.addError"));
 		} finally {
 			setIsAdding(false);
 		}
 	};
 
 	const preview = (
-		<div className="flex size-full items-center justify-center p-3">
+		<div className="relative flex size-full items-center justify-center p-3">
 			{hasImageError ? (
 				<span className="text-muted-foreground text-center text-xs break-all">
 					{displayName}
@@ -412,6 +428,11 @@ function StickerItem({
 					unoptimized
 				/>
 			)}
+			{assetType === "video" && (
+				<span className="absolute right-1.5 top-1.5 inline-flex size-5 items-center justify-center rounded-full bg-black/70 text-white shadow-sm">
+					<Play className="size-3 fill-current" aria-hidden="true" />
+				</span>
+			)}
 		</div>
 	);
 
@@ -428,6 +449,11 @@ function StickerItem({
 				type: "sticker",
 				name: displayName,
 				stickerId: item.id,
+				assetType,
+				sourceUrl,
+				sourceDuration,
+				intrinsicWidth: item.intrinsicWidth,
+				intrinsicHeight: item.intrinsicHeight,
 			};
 
 	return (

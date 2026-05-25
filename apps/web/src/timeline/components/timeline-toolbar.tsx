@@ -29,9 +29,7 @@ import { cn } from "@/utils/ui";
 import { useTimelineStore } from "@/timeline/timeline-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-	Bookmark02Icon,
 	Delete02Icon,
-	SnowIcon,
 	ScissorIcon,
 	MagnetIcon,
 	SearchAddIcon,
@@ -41,14 +39,11 @@ import {
 	AlignRightIcon,
 	Link02Icon,
 	Layers01Icon,
-	Chart03Icon,
 	Unlink02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { OcRippleIcon } from "@/components/icons";
-import { GraphEditorPopover } from "./graph-editor/popover";
-import { PopoverTrigger } from "@/components/ui/popover";
-import { useGraphEditorController } from "./graph-editor/use-controller";
+import { editorT, localizeDefaultSceneName } from "@/i18n/editor";
 
 export function TimelineToolbar({
 	zoomLevel,
@@ -91,10 +86,6 @@ function ToolbarLeftSection() {
 		currentEditor.media.getAssets(),
 	);
 	const { selectedElements } = useElementSelection();
-	const graphEditor = useGraphEditorController();
-	const isCurrentlyBookmarked = useEditor((e) =>
-		e.scenes.isBookmarked({ time: e.playback.getCurrentTime() }),
-	);
 	const selectedElement =
 		selectedElements.length === 1
 			? (editor.timeline.getElementsWithTracks({
@@ -121,7 +112,7 @@ function ToolbarLeftSection() {
 			? getSourceAudioActionLabel({
 					element: selectedElement.element,
 				})
-			: "Extract audio";
+			: editorT("timeline.extractAudio");
 	const isSelectedSourceAudioSeparated =
 		selectedElement?.element.type === "video" &&
 		isSourceAudioSeparated({
@@ -144,19 +135,19 @@ function ToolbarLeftSection() {
 			<TooltipProvider delayDuration={500}>
 				<ToolbarButton
 					icon={<HugeiconsIcon icon={ScissorIcon} />}
-					tooltip="Split element"
+					tooltip={editorT("timeline.split")}
 					onClick={({ event }) => handleAction({ action: "split", event })}
 				/>
 
 				<ToolbarButton
 					icon={<HugeiconsIcon icon={AlignLeftIcon} />}
-					tooltip="Split left"
+					tooltip={editorT("timeline.splitLeft")}
 					onClick={({ event }) => handleAction({ action: "split-left", event })}
 				/>
 
 				<ToolbarButton
 					icon={<HugeiconsIcon icon={AlignRightIcon} />}
-					tooltip="Split right"
+					tooltip={editorT("timeline.splitRight")}
 					onClick={({ event }) =>
 						handleAction({ action: "split-right", event })
 					}
@@ -177,69 +168,19 @@ function ToolbarLeftSection() {
 
 				<ToolbarButton
 					icon={<HugeiconsIcon icon={Copy01Icon} />}
-					tooltip="Duplicate element"
+					tooltip={editorT("timeline.duplicate")}
 					onClick={({ event }) =>
 						handleAction({ action: "duplicate-selected", event })
 					}
 				/>
 
 				<ToolbarButton
-					icon={<HugeiconsIcon icon={SnowIcon} />}
-					tooltip="Freeze frame (coming soon)"
-					disabled={true}
-					onClick={({ event: _event }) => {}}
-				/>
-
-				<ToolbarButton
 					icon={<HugeiconsIcon icon={Delete02Icon} />}
-					tooltip="Delete element"
+					tooltip={editorT("timeline.delete")}
 					onClick={({ event }) =>
 						handleAction({ action: "delete-selected", event })
 					}
 				/>
-
-				<div className="bg-border mx-1 h-6 w-px" />
-
-				<Tooltip>
-					<ToolbarButton
-						icon={<HugeiconsIcon icon={Bookmark02Icon} />}
-						isActive={isCurrentlyBookmarked}
-						tooltip={isCurrentlyBookmarked ? "Remove bookmark" : "Add bookmark"}
-						onClick={({ event }) =>
-							handleAction({ action: "toggle-bookmark", event })
-						}
-					/>
-				</Tooltip>
-
-				<GraphEditorPopover
-					open={graphEditor.open}
-					onOpenChange={graphEditor.onOpenChange}
-					value={
-						graphEditor.state.status === "ready"
-							? graphEditor.state.cubicBezier
-							: null
-					}
-					message={graphEditor.state.message}
-					componentOptions={graphEditor.state.componentOptions}
-					activeComponentKey={graphEditor.state.activeComponentKey}
-					onActiveComponentKeyChange={graphEditor.onActiveComponentKeyChange}
-					onPreviewValue={graphEditor.onPreviewValue}
-					onCommitValue={graphEditor.onCommitValue}
-					onCancelPreview={graphEditor.onCancelPreview}
-				>
-					<ToolbarButton
-						icon={<HugeiconsIcon icon={Chart03Icon} />}
-						tooltip={graphEditor.tooltip}
-						disabled={!graphEditor.canOpen}
-						buttonWrapper={(button) =>
-							graphEditor.canOpen ? (
-								<PopoverTrigger asChild>{button}</PopoverTrigger>
-							) : (
-								button
-							)
-						}
-					/>
-				</GraphEditorPopover>
 			</TooltipProvider>
 		</div>
 	);
@@ -252,7 +193,11 @@ function SceneSelector() {
 	return (
 		<div>
 			<SplitButton className="border-foreground/10 border">
-				<SplitButtonLeft>{currentScene?.name || "No Scene"}</SplitButtonLeft>
+				<SplitButtonLeft>
+					{currentScene
+						? localizeDefaultSceneName({ name: currentScene.name })
+						: editorT("scene.fallback")}
+				</SplitButtonLeft>
 				<SplitButtonSeparator />
 				<ScenesView>
 					<SplitButtonRight onClick={() => {}}>
@@ -286,14 +231,14 @@ function ToolbarRightSection({
 				<ToolbarButton
 					icon={<HugeiconsIcon icon={MagnetIcon} />}
 					isActive={snappingEnabled}
-					tooltip="Auto snapping"
+					tooltip={editorT("timeline.autoSnapping")}
 					onClick={() => toggleSnapping()}
 				/>
 
 				<ToolbarButton
 					icon={<OcRippleIcon size={24} className="scale-110" />}
 					isActive={rippleEditingEnabled}
-					tooltip="Ripple editing"
+					tooltip={editorT("timeline.rippleEditing")}
 					onClick={() => toggleRippleEditing()}
 				/>
 			</TooltipProvider>
@@ -304,6 +249,7 @@ function ToolbarRightSection({
 				<Button
 					variant="text"
 					size="icon"
+					aria-label={editorT("timeline.zoomOut")}
 					onClick={() => onZoom({ direction: "out" })}
 				>
 					<HugeiconsIcon icon={SearchMinusIcon} />
@@ -321,6 +267,7 @@ function ToolbarRightSection({
 				<Button
 					variant="text"
 					size="icon"
+					aria-label={editorT("timeline.zoomIn")}
 					onClick={() => onZoom({ direction: "in" })}
 				>
 					<HugeiconsIcon icon={SearchAddIcon} />

@@ -1,10 +1,9 @@
-import {
-	STICKER_CATEGORIES,
-} from "@/stickers/categories";
+import { STICKER_CATEGORIES } from "@/stickers/categories";
+import { editorT } from "@/i18n/editor";
 import { STICKER_INTRINSIC_SIZE_FALLBACK } from "@/stickers/intrinsic-size";
 import type { StickerCategory } from "@/stickers/types";
 import { stickersRegistry } from "./registry";
-import { resolveStickerId } from "./resolver";
+import { resolveStickerAsset, resolveStickerId } from "./resolver";
 import { registerDefaultStickerProviders } from "./providers";
 import { parseStickerId } from "./sticker-id";
 import type {
@@ -86,15 +85,25 @@ function toRecentStickerItem({
 }): StickerItem | null {
 	try {
 		const { providerId } = parseStickerId({ stickerId });
+		const asset = resolveStickerAsset({
+			stickerId,
+			options: { width: 64, height: 64 },
+		});
+		if (asset.metadata?.missingSticker === true) {
+			return null;
+		}
+
 		return {
 			id: stickerId,
 			provider: providerId,
 			name: getStickerNameFromId({ stickerId }),
-			previewUrl: resolveStickerId({
-				stickerId,
-				options: { width: 64, height: 64 },
-			}),
-			metadata: {},
+			previewUrl: asset.previewUrl,
+			assetType: asset.assetType,
+			sourceUrl: asset.sourceUrl,
+			sourceDuration: asset.sourceDuration,
+			intrinsicWidth: asset.intrinsicWidth,
+			intrinsicHeight: asset.intrinsicHeight,
+			metadata: asset.metadata ?? {},
 		};
 	} catch {
 		return null;
@@ -243,7 +252,7 @@ export async function browseAll({
 	if (recentItems.length > 0) {
 		sections.push({
 			id: "recent",
-			title: "Recently used",
+			title: editorT("stickers.recentlyUsed"),
 			items: recentItems.slice(0, limit),
 			hasMore: recentItems.length > limit,
 			layout: "row",
@@ -262,17 +271,17 @@ export async function browseAll({
 			}
 
 			const category = provider.id as StickerCategory;
-		return {
-			...firstSection,
-			id: category,
-			title: STICKER_CATEGORIES[category] ?? firstSection.title,
-			layout: "row" as const,
-			action: {
-				type: "see-all" as const,
-				category,
-				sectionId: firstSection.id,
-			},
-		};
+			return {
+				...firstSection,
+				id: category,
+				title: STICKER_CATEGORIES[category] ?? firstSection.title,
+				layout: "row" as const,
+				action: {
+					type: "see-all" as const,
+					category,
+					sectionId: firstSection.id,
+				},
+			};
 		}),
 	);
 
@@ -305,10 +314,13 @@ export async function resolveStickerIntrinsicSize({
 }
 
 export { resolveStickerId };
+export { resolveStickerAsset };
 export { resolveQueryToRegions, getRegionLabel } from "./providers/flags";
 export type {
+	ResolvedStickerAsset,
 	StickerBrowseResult,
 	StickerBrowseSection,
+	StickerAssetType,
 	StickerCategory,
 	StickerItem,
 	StickerProvider,

@@ -25,6 +25,7 @@ import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { useSoundSearch } from "@/sounds/use-sound-search";
 import { useSoundsStore } from "@/sounds/sounds-store";
 import type { SavedSound, SoundEffect } from "@/sounds/types";
+import { withBasePath } from "@/utils/base-path";
 import { cn } from "@/utils/ui";
 import {
 	FavouriteIcon,
@@ -124,7 +125,7 @@ function SoundEffectsView() {
 				}
 
 				const response = await fetch(
-					"/api/sounds/search?page_size=50&sort=downloads",
+					withBasePath("/api/sounds/search?page_size=50&sort=downloads"),
 				);
 
 				if (!shouldIgnore) {

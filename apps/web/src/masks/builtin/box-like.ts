@@ -17,6 +17,7 @@ import {
 	getBoxMaskOverlays,
 } from "@/masks/handle-positions";
 import { snapBoxMaskInteraction } from "@/masks/snap";
+import { editorT } from "@/i18n/editor";
 
 const PERCENTAGE_DISPLAY: Pick<
 	NumberParamDefinition,
@@ -49,7 +50,7 @@ export const BOX_LIKE_MASK_PARAMS: ParamDefinition<
 	},
 	{
 		key: "width",
-		label: "Width",
+		label: editorT("params.width"),
 		type: "number",
 		default: 0.6,
 		min: 1,
@@ -57,7 +58,7 @@ export const BOX_LIKE_MASK_PARAMS: ParamDefinition<
 	},
 	{
 		key: "height",
-		label: "Height",
+		label: editorT("params.height"),
 		type: "number",
 		default: 0.6,
 		min: 1,
@@ -65,7 +66,7 @@ export const BOX_LIKE_MASK_PARAMS: ParamDefinition<
 	},
 	{
 		key: "rotation",
-		label: "Rotation",
+		label: editorT("params.rotation"),
 		type: "number",
 		default: 0,
 		min: 0,
@@ -74,7 +75,7 @@ export const BOX_LIKE_MASK_PARAMS: ParamDefinition<
 	},
 	{
 		key: "scale",
-		label: "Scale",
+		label: editorT("params.scale"),
 		type: "number",
 		default: 1,
 		min: 1,
@@ -83,13 +84,13 @@ export const BOX_LIKE_MASK_PARAMS: ParamDefinition<
 	},
 	{
 		key: "strokeAlign",
-		label: "Stroke Align",
+		label: editorT("params.strokeAlign"),
 		type: "select",
 		default: "center",
 		options: [
-			{ value: "inside", label: "Inside" },
-			{ value: "center", label: "Center" },
-			{ value: "outside", label: "Outside" },
+			{ value: "inside", label: editorT("options.inside") },
+			{ value: "center", label: editorT("options.center") },
+			{ value: "outside", label: editorT("options.outside") },
 		],
 	},
 ];
