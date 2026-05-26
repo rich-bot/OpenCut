@@ -3,6 +3,8 @@
 import { Separator } from "@/components/ui/separator";
 import {
 	isVisibleTab,
+	resolveVisibleAssetTabs,
+	type Tab,
 	type VisibleTab,
 	useAssetsPanelStore,
 } from "@/components/editor/panels/assets/assets-panel-store";
@@ -15,9 +17,12 @@ import { SoundsView } from "@/sounds/components/assets-view";
 import { StickersView } from "@/stickers/components/assets-view";
 import { TextView } from "@/text/components/assets-view";
 
-export function AssetsPanel() {
+export function AssetsPanel({ hiddenTabs }: { hiddenTabs?: readonly Tab[] }) {
 	const { activeTab } = useAssetsPanelStore();
-	const currentTab = isVisibleTab(activeTab) ? activeTab : "media";
+	const visibleTabs = resolveVisibleAssetTabs(hiddenTabs);
+	const currentTab = isVisibleTab(activeTab, visibleTabs)
+		? activeTab
+		: "subtitleEdit";
 
 	const viewMap: Record<VisibleTab, React.ReactNode> = {
 		media: <MediaView />,
@@ -31,7 +36,7 @@ export function AssetsPanel() {
 
 	return (
 		<div className="panel bg-background flex h-full rounded-sm border overflow-hidden">
-			<TabBar />
+			<TabBar hiddenTabs={hiddenTabs} />
 			<Separator orientation="vertical" />
 			<div className="flex-1 overflow-hidden">{viewMap[currentTab]}</div>
 		</div>

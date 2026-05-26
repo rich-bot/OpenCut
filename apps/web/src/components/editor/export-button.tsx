@@ -43,6 +43,56 @@ function isExportQuality(value: string): value is ExportQuality {
 	return EXPORT_QUALITY_VALUES.some((qualityValue) => qualityValue === value);
 }
 
+function notifyEmbeddedExportSuccess({
+	projectId,
+	filename,
+	mimeType,
+	format,
+	buffer,
+}: {
+	projectId: string;
+	filename: string;
+	mimeType: string;
+	format: ExportFormat;
+	buffer: ArrayBuffer;
+}) {
+	if (typeof window === "undefined" || window.parent === window) return;
+
+	window.parent.postMessage(
+		{
+			source: "opencut",
+			type: "export-success",
+			projectId,
+			filename,
+			mimeType,
+			format,
+			buffer,
+		},
+		"*",
+		[buffer],
+	);
+}
+
+function notifyEmbeddedExportError({
+	projectId,
+	message,
+}: {
+	projectId: string;
+	message: string;
+}) {
+	if (typeof window === "undefined" || window.parent === window) return;
+
+	window.parent.postMessage(
+		{
+			source: "opencut",
+			type: "export-error",
+			projectId,
+			message,
+		},
+		"*",
+	);
+}
+
 export function ExportButton({
 	isEmbedded = false,
 }: {
@@ -153,14 +203,34 @@ function ExportPopover({
 		}
 
 		if (result.success && result.buffer) {
+			const filename = `${activeProject.metadata.name}${getExportFileExtension({ format })}`;
+			const mimeType = getExportMimeType({ format });
 			downloadBuffer({
 				buffer: result.buffer,
-				filename: `${activeProject.metadata.name}${getExportFileExtension({ format })}`,
-				mimeType: getExportMimeType({ format }),
+				filename,
+				mimeType,
 			});
+
+			if (isEmbedded) {
+				notifyEmbeddedExportSuccess({
+					projectId: activeProject.metadata.id,
+					filename,
+					mimeType,
+					format,
+					buffer: result.buffer,
+				});
+			}
 
 			editor.project.clearExportState();
 			onOpenChange(false);
+			return;
+		}
+
+		if (isEmbedded && !result.success) {
+			notifyEmbeddedExportError({
+				projectId: activeProject.metadata.id,
+				message: result.error || "导出失败",
+			});
 		}
 	};
 

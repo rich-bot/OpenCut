@@ -7,6 +7,7 @@ import {
 	ResizableHandle,
 } from "@/components/ui/resizable";
 import { AssetsPanel } from "@/components/editor/panels/assets";
+import type { Tab } from "@/components/editor/panels/assets/assets-panel-store";
 import { PropertiesPanel } from "@/components/editor/panels/properties";
 import { Timeline } from "@/timeline/components";
 import { PreviewPanel } from "@/preview/components";
@@ -48,10 +49,12 @@ export function EditorWorkspace({
 	projectId,
 	isEmbedded = false,
 	hideHeader = false,
+	hiddenAssetTabs,
 }: {
 	projectId: string;
 	isEmbedded?: boolean;
 	hideHeader?: boolean;
+	hiddenAssetTabs?: readonly Tab[];
 }) {
 	return (
 		<MobileGate>
@@ -66,7 +69,7 @@ export function EditorWorkspace({
 					{!hideHeader ? <EditorHeader isEmbedded={isEmbedded} /> : null}
 					{isEmbedded && hideHeader ? <HiddenEmbeddedExportButton /> : null}
 					<div className="min-h-0 min-w-0 flex-1">
-						<EditorLayout />
+						<EditorLayout hiddenAssetTabs={hiddenAssetTabs} />
 					</div>
 					{isEmbedded ? <EmbedReadyBridge projectId={projectId} /> : null}
 					{isEmbedded ? <EmbedCommandBridge /> : null}
@@ -84,11 +87,13 @@ export function MakeSameEditorWorkspace({
 	isEmbedded = true,
 	makeSameId,
 	hideHeader = false,
+	hiddenAssetTabs,
 }: {
 	projectId: string;
 	isEmbedded?: boolean;
 	makeSameId?: string;
 	hideHeader?: boolean;
+	hiddenAssetTabs?: readonly Tab[];
 }) {
 	return (
 		<MobileGate>
@@ -103,7 +108,7 @@ export function MakeSameEditorWorkspace({
 					{!hideHeader ? <EditorHeader isEmbedded={isEmbedded} /> : null}
 					{isEmbedded && hideHeader ? <HiddenEmbeddedExportButton /> : null}
 					<div className="min-h-0 min-w-0 flex-1">
-						<EditorLayout />
+						<EditorLayout hiddenAssetTabs={hiddenAssetTabs} />
 					</div>
 					{isEmbedded ? (
 						<EmbedReadyBridge projectId={makeSameId ?? projectId} />
@@ -183,7 +188,11 @@ function DegradedRendererBanner() {
 	);
 }
 
-function EditorLayout() {
+function EditorLayout({
+	hiddenAssetTabs,
+}: {
+	hiddenAssetTabs?: readonly Tab[];
+}) {
 	usePasteMedia();
 	const { panels, setPanel } = usePanelStore();
 	const activeScene = useEditor((editor) =>
@@ -269,7 +278,7 @@ function EditorLayout() {
 						maxSize={40}
 						className="min-w-0"
 					>
-						<AssetsPanel />
+						<AssetsPanel hiddenTabs={hiddenAssetTabs} />
 					</ResizablePanel>
 
 					<ResizableHandle withHandle />
@@ -294,7 +303,7 @@ function EditorLayout() {
 						maxSize={40}
 						className="min-w-0"
 					>
-						<PropertiesPanel />
+						<PropertiesPanel hiddenAssetTabs={hiddenAssetTabs} />
 					</ResizablePanel>
 				</ResizablePanelGroup>
 			</ResizablePanel>

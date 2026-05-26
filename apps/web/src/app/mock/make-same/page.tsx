@@ -10,6 +10,10 @@ import { DEFAULT_FPS } from "@/fps/defaults";
 import { readVideoFile } from "@/media/mediabunny";
 import { buildElementFromMedia, buildLibraryAudioElement } from "@/timeline";
 import { buildSubtitleTextElement } from "@/subtitles/build-subtitle-text-element";
+import {
+	parseHiddenAssetTabs,
+	type Tab,
+} from "@/components/editor/panels/assets/assets-panel-store";
 import { createRichTextRunsFromMiaosiFonts } from "@/text/rich-text";
 import { generateUUID } from "@/utils/id";
 import { withBasePath } from "@/utils/base-path";
@@ -42,9 +46,27 @@ const MAKE_SAME_PROJECT_SCHEMA_VERSION = 10;
 const MAKE_SAME_SESSION_PREFIX = "neo:opencut:make-same:";
 
 type LoadState =
-	| { status: "loading"; id: string; message: string; hideHeader: boolean }
-	| { status: "ready"; id: string; projectId: string; hideHeader: boolean }
-	| { status: "error"; id: string; message: string; hideHeader: boolean };
+	| {
+			status: "loading";
+			id: string;
+			message: string;
+			hideHeader: boolean;
+			hiddenAssetTabs?: readonly Tab[];
+	  }
+	| {
+			status: "ready";
+			id: string;
+			projectId: string;
+			hideHeader: boolean;
+			hiddenAssetTabs?: readonly Tab[];
+	  }
+	| {
+			status: "error";
+			id: string;
+			message: string;
+			hideHeader: boolean;
+			hiddenAssetTabs?: readonly Tab[];
+	  };
 
 export default function MakeSameMockPage() {
 	const [state, setState] = useState<LoadState>({
@@ -59,17 +81,21 @@ export default function MakeSameMockPage() {
 		const id = searchParams.get("id") || makeSameDemo.id;
 		const reset = searchParams.get("reset") === "1";
 		const hideHeader = searchParams.get("hideHeader") === "1";
+		const hiddenAssetTabs = parseHiddenAssetTabs(
+			searchParams.get("hiddenAssetTabs"),
+		);
 
 		setState({
 			status: "loading",
 			id,
 			message: "正在准备同款剪辑项目...",
 			hideHeader,
+			hiddenAssetTabs,
 		});
 
 		ensureMakeSameProject({ id, reset })
 			.then((projectId) => {
-				setState({ status: "ready", id, projectId, hideHeader });
+				setState({ status: "ready", id, projectId, hideHeader, hiddenAssetTabs });
 			})
 			.catch((error) => {
 				console.error("[make-same] failed to prepare project", error);
@@ -77,6 +103,7 @@ export default function MakeSameMockPage() {
 					status: "error",
 					id,
 					hideHeader,
+					hiddenAssetTabs,
 					message:
 						error instanceof Error
 							? error.message
@@ -93,6 +120,7 @@ export default function MakeSameMockPage() {
 				makeSameId={state.id}
 				isEmbedded
 				hideHeader={state.hideHeader}
+				hiddenAssetTabs={state.hiddenAssetTabs}
 			/>
 		);
 	}

@@ -18,12 +18,16 @@ function getEmbedEditorUrl(projectId: string, searchParams: URLSearchParams) {
 	const editorParams = new URLSearchParams();
 	const theme = searchParams.get("theme")?.trim();
 	const hideHeader = searchParams.get("hideHeader")?.trim();
+	const hiddenAssetTabs = searchParams.get("hiddenAssetTabs")?.trim();
 
 	if (theme) {
 		editorParams.set("theme", theme);
 	}
 	if (hideHeader) {
 		editorParams.set("hideHeader", hideHeader);
+	}
+	if (hiddenAssetTabs) {
+		editorParams.set("hiddenAssetTabs", hiddenAssetTabs);
 	}
 
 	const query = editorParams.toString();

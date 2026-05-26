@@ -14,8 +14,13 @@ import { usePropertiesStore } from "./stores/properties-store";
 import { getPropertiesConfig } from "./registry";
 import { cn } from "@/utils/ui";
 import { EmptyView } from "./empty-view";
+import type { Tab as AssetPanelTab } from "@/components/editor/panels/assets/assets-panel-store";
 
-export function PropertiesPanel() {
+export function PropertiesPanel({
+	hiddenAssetTabs,
+}: {
+	hiddenAssetTabs?: readonly AssetPanelTab[];
+}) {
 	const editor = useEditor();
 	useEditor((e) => e.scenes.getActiveSceneOrNull());
 	useEditor((e) => e.media.getAssets());
@@ -50,7 +55,7 @@ export function PropertiesPanel() {
 	if (!elementWithTrack) return null;
 
 	const { element, track } = elementWithTrack;
-	const config = getPropertiesConfig({ element, mediaAssets });
+	const config = getPropertiesConfig({ element, mediaAssets, hiddenAssetTabs });
 	const visibleTabs = config.tabs;
 
 	const storedTabId = activeTabPerType[element.type];

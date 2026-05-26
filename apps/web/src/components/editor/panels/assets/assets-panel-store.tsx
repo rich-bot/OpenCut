@@ -42,8 +42,39 @@ export const VISIBLE_TAB_KEYS = [
 
 export type VisibleTab = (typeof VISIBLE_TAB_KEYS)[number];
 
-export function isVisibleTab(tab: Tab): tab is VisibleTab {
-	return VISIBLE_TAB_KEYS.some((visibleTab) => visibleTab === tab);
+export const DEFAULT_HIDDEN_ASSET_TAB_KEYS = [
+	"sounds",
+	"effects",
+] as const satisfies readonly Tab[];
+
+export function isTabKey(value: string): value is Tab {
+	return (TAB_KEYS as readonly string[]).includes(value);
+}
+
+export function parseHiddenAssetTabs(
+	value?: string | null,
+): readonly Tab[] | undefined {
+	if (value == null) return undefined;
+	return value
+		.split(",")
+		.map((tab) => tab.trim())
+		.filter(isTabKey);
+}
+
+export function resolveVisibleAssetTabs(
+	hiddenTabs?: readonly (Tab | string)[],
+): VisibleTab[] {
+	const hidden = new Set(
+		(hiddenTabs ?? DEFAULT_HIDDEN_ASSET_TAB_KEYS).filter(isTabKey),
+	);
+	return VISIBLE_TAB_KEYS.filter((visibleTab) => !hidden.has(visibleTab));
+}
+
+export function isVisibleTab(
+	tab: Tab,
+	visibleTabs: readonly Tab[] = resolveVisibleAssetTabs(),
+): tab is VisibleTab {
+	return visibleTabs.some((visibleTab) => visibleTab === tab);
 }
 
 const createHugeiconsIcon = ({ icon }: { icon: IconSvgElement }) => {

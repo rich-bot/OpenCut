@@ -9,16 +9,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/ui";
 import {
-	VISIBLE_TAB_KEYS,
+	resolveVisibleAssetTabs,
 	tabs,
+	type Tab,
 	useAssetsPanelStore,
 } from "@/components/editor/panels/assets/assets-panel-store";
 
-export function TabBar() {
+export function TabBar({ hiddenTabs }: { hiddenTabs?: readonly Tab[] }) {
 	const { activeTab, setActiveTab } = useAssetsPanelStore();
 	const [showTopFade, setShowTopFade] = useState(false);
 	const [showBottomFade, setShowBottomFade] = useState(false);
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const visibleTabs = resolveVisibleAssetTabs(hiddenTabs);
 
 	const checkScrollPosition = useCallback(() => {
 		const element = scrollRef.current;
@@ -51,7 +53,7 @@ export function TabBar() {
 				ref={scrollRef}
 				className="scrollbar-hidden relative flex size-full p-1 flex-col items-center justify-start gap-0.5 overflow-y-auto"
 			>
-				{VISIBLE_TAB_KEYS.map((tabKey) => {
+				{visibleTabs.map((tabKey) => {
 					const tab = tabs[tabKey];
 					return (
 						<Tooltip key={tabKey} delayDuration={10}>

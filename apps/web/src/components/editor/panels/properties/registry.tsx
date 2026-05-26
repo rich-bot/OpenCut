@@ -13,6 +13,7 @@ import type {
 	TimelineElement,
 } from "@/timeline";
 import type { MediaAsset } from "@/media/types";
+import type { Tab as AssetPanelTab } from "@/components/editor/panels/assets/assets-panel-store";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
 	TextFontIcon,
@@ -80,6 +81,45 @@ export type ElementPropertiesConfig = {
 	defaultTab: string;
 	tabs: PropertiesTabDef[];
 };
+
+const DEFAULT_HIDDEN_PROPERTY_SOURCE_TABS = [
+	"sounds",
+	"effects",
+] as const satisfies readonly AssetPanelTab[];
+
+function getPropertyTabsForAssetTab(
+	tab: AssetPanelTab | string,
+): readonly string[] {
+	if (tab === "sounds") return ["audio"];
+	if (tab === "effects") return ["effects"];
+	return [];
+}
+
+function resolveHiddenPropertyTabIds(
+	hiddenAssetTabs?: readonly (AssetPanelTab | string)[],
+) {
+	const sourceTabs = hiddenAssetTabs ?? DEFAULT_HIDDEN_PROPERTY_SOURCE_TABS;
+	return new Set(sourceTabs.flatMap(getPropertyTabsForAssetTab));
+}
+
+function filterPropertiesConfig({
+	config,
+	hiddenAssetTabs,
+}: {
+	config: ElementPropertiesConfig;
+	hiddenAssetTabs?: readonly (AssetPanelTab | string)[];
+}): ElementPropertiesConfig {
+	const hiddenTabIds = resolveHiddenPropertyTabIds(hiddenAssetTabs);
+	if (hiddenTabIds.size === 0) return config;
+
+	const tabs = config.tabs.filter((tab) => !hiddenTabIds.has(tab.id));
+	return {
+		defaultTab: tabs.some((tab) => tab.id === config.defaultTab)
+			? config.defaultTab
+			: (tabs[0]?.id ?? config.defaultTab),
+		tabs,
+	};
+}
 
 function buildTransformTab({
 	element,
@@ -338,26 +378,39 @@ function getEffectConfig({
 export function getPropertiesConfig({
 	element,
 	mediaAssets,
+	hiddenAssetTabs,
 }: {
 	element: TimelineElement;
 	mediaAssets: MediaAsset[];
+	hiddenAssetTabs?: readonly (AssetPanelTab | string)[];
 }): ElementPropertiesConfig {
+	let config: ElementPropertiesConfig;
+
 	switch (element.type) {
 		case "text":
-			return getTextConfig({ element });
+			config = getTextConfig({ element });
+			break;
 		case "video": {
 			const mediaAsset = mediaAssets.find((a) => a.id === element.mediaId);
-			return getVideoConfig({ element, mediaAsset });
+			config = getVideoConfig({ element, mediaAsset });
+			break;
 		}
 		case "image":
-			return getImageConfig({ element });
+			config = getImageConfig({ element });
+			break;
 		case "sticker":
-			return getStickerConfig({ element });
+			config = getStickerConfig({ element });
+			break;
 		case "graphic":
-			return getGraphicConfig({ element });
+			config = getGraphicConfig({ element });
+			break;
 		case "audio":
-			return getAudioConfig({ element });
+			config = getAudioConfig({ element });
+			break;
 		case "effect":
-			return getEffectConfig({ element });
+			config = getEffectConfig({ element });
+			break;
 	}
+
+	return filterPropertiesConfig({ config, hiddenAssetTabs });
 }
