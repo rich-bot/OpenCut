@@ -22,6 +22,15 @@ interface EditorProviderProps {
 	children: React.ReactNode;
 }
 
+function getEmbeddedEditorUrl(projectId: string) {
+	if (typeof window === "undefined") return `/embed/editor/${projectId}`;
+
+	const match = window.location.pathname.match(/^(.*)\/embed(?:\/.*)?$/);
+	const prefix = match?.[1] ?? "";
+	const query = window.location.search;
+	return `${prefix}/embed/editor/${projectId}${query}`;
+}
+
 export function EditorProvider({
 	projectId,
 	isEmbedded = false,
@@ -65,11 +74,11 @@ export function EditorProvider({
 						const newProjectId = await editor.project.createNewProject({
 							name: editorT("project.defaultName"),
 						});
-						router.replace(
-							isEmbedded
-								? `/embed/editor/${newProjectId}`
-								: `/editor/${newProjectId}`,
-						);
+						if (isEmbedded) {
+							window.location.replace(getEmbeddedEditorUrl(newProjectId));
+						} else {
+							router.replace(`/editor/${newProjectId}`);
+						}
 					} catch (_createErr) {
 						setError(editorT("project.createError"));
 						setIsLoading(false);

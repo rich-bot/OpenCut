@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { EditorCore } from "@/core";
 
@@ -31,11 +30,17 @@ function getEmbedEditorUrl(projectId: string, searchParams: URLSearchParams) {
 	}
 
 	const query = editorParams.toString();
-	return `/embed/editor/${projectId}${query ? `?${query}` : ""}`;
+	return `${getEmbedPathPrefix()}/embed/editor/${projectId}${query ? `?${query}` : ""}`;
+}
+
+function getEmbedPathPrefix() {
+	if (typeof window === "undefined") return "";
+
+	const match = window.location.pathname.match(/^(.*)\/embed(?:\/.*)?$/);
+	return match?.[1] ?? "";
 }
 
 export default function EmbedEntryPage() {
-	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -45,7 +50,7 @@ export default function EmbedEntryPage() {
 			const searchParams = new URLSearchParams(window.location.search);
 			const existingProjectId = searchParams.get("projectId")?.trim();
 			if (existingProjectId) {
-				router.replace(getEmbedEditorUrl(existingProjectId, searchParams));
+				window.location.replace(getEmbedEditorUrl(existingProjectId, searchParams));
 				return;
 			}
 
@@ -59,7 +64,7 @@ export default function EmbedEntryPage() {
 				if (cancelled) return;
 
 				notifyParent({ source: "opencut", type: "project-created", projectId });
-				router.replace(getEmbedEditorUrl(projectId, searchParams));
+				window.location.replace(getEmbedEditorUrl(projectId, searchParams));
 			} catch (err) {
 				if (cancelled) return;
 
@@ -74,7 +79,7 @@ export default function EmbedEntryPage() {
 		return () => {
 			cancelled = true;
 		};
-	}, [router]);
+	}, []);
 
 	return (
 		<div className="bg-background flex h-screen w-screen items-center justify-center">

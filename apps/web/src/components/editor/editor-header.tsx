@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "../ui/button";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -30,9 +30,13 @@ import { editorT, localizeDefaultProjectName } from "@/i18n/editor";
 
 interface EditorHeaderProps {
 	isEmbedded?: boolean;
+	layoutModeSwitch?: ReactNode;
 }
 
-export function EditorHeader({ isEmbedded = false }: EditorHeaderProps) {
+export function EditorHeader({
+	isEmbedded = false,
+	layoutModeSwitch,
+}: EditorHeaderProps) {
 	return (
 		<header
 			className={cn(
@@ -47,6 +51,7 @@ export function EditorHeader({ isEmbedded = false }: EditorHeaderProps) {
 			</div>
 			<nav className="flex items-center gap-2">
 				{!isEmbedded ? <FeedbackPopover /> : null}
+				{layoutModeSwitch}
 				<ExportButton isEmbedded={isEmbedded} />
 				{!isEmbedded ? <ThemeToggle /> : null}
 			</nav>

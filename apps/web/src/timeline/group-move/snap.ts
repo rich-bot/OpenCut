@@ -1,10 +1,11 @@
-import type { SceneTracks } from "@/timeline";
+import type { Bookmark, SceneTracks } from "@/timeline";
 import {
 	buildTimelineSnapPoints,
 	getTimelineSnapThresholdInTicks,
 	resolveTimelineSnap,
 	type SnapPoint,
 } from "@/timeline/snapping";
+import { getBookmarkSnapPoints } from "@/timeline/bookmarks";
 import { getElementEdgeSnapPoints } from "@/timeline/element-snap-source";
 import { getPlayheadSnapPoints } from "@/timeline/playhead-snap-source";
 import { getAnimationKeyframeSnapPointsForTimeline } from "@/timeline/animation-snap-points";
@@ -15,12 +16,14 @@ export function snapGroupEdges({
 	group,
 	anchorStartTime,
 	tracks,
+	bookmarks,
 	playheadTime,
 	zoomLevel,
 }: {
 	group: MoveGroup;
 	anchorStartTime: MediaTime;
 	tracks: SceneTracks;
+	bookmarks: Bookmark[];
 	playheadTime: MediaTime;
 	zoomLevel: number;
 }): {
@@ -34,6 +37,7 @@ export function snapGroupEdges({
 		sources: [
 			() => getElementEdgeSnapPoints({ tracks, excludeElementIds }),
 			() => getPlayheadSnapPoints({ playheadTime }),
+			() => getBookmarkSnapPoints({ bookmarks }),
 			() =>
 				getAnimationKeyframeSnapPointsForTimeline({
 					tracks,

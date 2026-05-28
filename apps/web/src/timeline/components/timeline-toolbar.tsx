@@ -29,11 +29,14 @@ import { cn } from "@/utils/ui";
 import { useTimelineStore } from "@/timeline/timeline-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+	Bookmark02Icon,
+	Chart03Icon,
 	Delete02Icon,
-	ScissorIcon,
 	MagnetIcon,
+	ScissorIcon,
 	SearchAddIcon,
 	SearchMinusIcon,
+	SnowIcon,
 	Copy01Icon,
 	AlignLeftIcon,
 	AlignRightIcon,
@@ -44,6 +47,9 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { OcRippleIcon } from "@/components/icons";
 import { editorT, localizeDefaultSceneName } from "@/i18n/editor";
+import { GraphEditorPopover } from "./graph-editor/popover";
+import { PopoverTrigger } from "@/components/ui/popover";
+import { useGraphEditorController } from "./graph-editor/use-controller";
 
 export function TimelineToolbar({
 	zoomLevel,
@@ -86,6 +92,10 @@ function ToolbarLeftSection() {
 		currentEditor.media.getAssets(),
 	);
 	const { selectedElements } = useElementSelection();
+	const graphEditor = useGraphEditorController();
+	const isCurrentlyBookmarked = useEditor((e) =>
+		e.scenes.isBookmarked({ time: e.playback.getCurrentTime() }),
+	);
 	const selectedElement =
 		selectedElements.length === 1
 			? (editor.timeline.getElementsWithTracks({
@@ -175,12 +185,64 @@ function ToolbarLeftSection() {
 				/>
 
 				<ToolbarButton
+					icon={<HugeiconsIcon icon={SnowIcon} />}
+					tooltip={editorT("timeline.freezeFrameComingSoon")}
+					disabled
+					onClick={({ event }) => event.stopPropagation()}
+				/>
+
+				<ToolbarButton
 					icon={<HugeiconsIcon icon={Delete02Icon} />}
 					tooltip={editorT("timeline.delete")}
 					onClick={({ event }) =>
 						handleAction({ action: "delete-selected", event })
 					}
 				/>
+
+				<div className="bg-border mx-1 h-6 w-px" />
+
+				<ToolbarButton
+					icon={<HugeiconsIcon icon={Bookmark02Icon} />}
+					isActive={isCurrentlyBookmarked}
+					tooltip={
+						isCurrentlyBookmarked
+							? editorT("timeline.removeBookmark")
+							: editorT("timeline.addBookmark")
+					}
+					onClick={({ event }) =>
+						handleAction({ action: "toggle-bookmark", event })
+					}
+				/>
+
+				<GraphEditorPopover
+					open={graphEditor.open}
+					onOpenChange={graphEditor.onOpenChange}
+					value={
+						graphEditor.state.status === "ready"
+							? graphEditor.state.cubicBezier
+							: null
+					}
+					message={graphEditor.state.message}
+					componentOptions={graphEditor.state.componentOptions}
+					activeComponentKey={graphEditor.state.activeComponentKey}
+					onActiveComponentKeyChange={graphEditor.onActiveComponentKeyChange}
+					onPreviewValue={graphEditor.onPreviewValue}
+					onCommitValue={graphEditor.onCommitValue}
+					onCancelPreview={graphEditor.onCancelPreview}
+				>
+					<ToolbarButton
+						icon={<HugeiconsIcon icon={Chart03Icon} />}
+						tooltip={graphEditor.tooltip || editorT("timeline.openGraphEditor")}
+						disabled={!graphEditor.canOpen}
+						buttonWrapper={(button) =>
+							graphEditor.canOpen ? (
+								<PopoverTrigger asChild>{button}</PopoverTrigger>
+							) : (
+								button
+							)
+						}
+					/>
+				</GraphEditorPopover>
 			</TooltipProvider>
 		</div>
 	);

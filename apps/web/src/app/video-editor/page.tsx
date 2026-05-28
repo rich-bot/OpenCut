@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { MakeSameEditorWorkspace } from "@/app/editor/[project_id]/page";
+import {
+	MakeSameEditorWorkspace,
+	type EditorLayoutMode,
+} from "@/app/editor/[project_id]/page";
 import { storageService } from "@/services/storage/service";
 import { CURRENT_PROJECT_VERSION } from "@/services/storage/migrations";
 import { DEFAULT_BACKGROUND_COLOR } from "@/background/color";
 import { DEFAULT_FPS } from "@/fps/defaults";
 import { readVideoFile } from "@/media/mediabunny";
 import { buildElementFromMedia, buildLibraryAudioElement } from "@/timeline";
+import { buildSeparatedAudioElement } from "@/timeline/audio-separation";
 import { buildSubtitleTextElement } from "@/subtitles/build-subtitle-text-element";
 import {
 	parseHiddenAssetTabs,
@@ -16,14 +20,12 @@ import {
 } from "@/components/editor/panels/assets/assets-panel-store";
 import { createRichTextRunsFromMiaosiFonts } from "@/text/rich-text";
 import { generateUUID } from "@/utils/id";
-import { withBasePath } from "@/utils/base-path";
 import { mediaTimeFromSeconds, type MediaTime, ZERO_MEDIA_TIME } from "@/wasm";
-import {
-	makeSameDemo,
-	type MakeSameEditorData,
-	type MakeSameSubtitle,
-	type MakeSameVideoSegment,
-} from "@/mock/make-same-demo";
+import type {
+	VideoEditorData,
+	VideoEditorSubtitle,
+	VideoEditorVideoSegment,
+} from "@/video-editor/types";
 import type { MediaAsset, MediaType } from "@/media/types";
 import type { TProject } from "@/project/types";
 import type {
@@ -42,8 +44,8 @@ type PrimaryAsset = {
 	timelineDurationSeconds: number;
 };
 
-const MAKE_SAME_PROJECT_SCHEMA_VERSION = 10;
-const MAKE_SAME_SESSION_PREFIX = "neo:opencut:make-same:";
+const VIDEO_EDITOR_PROJECT_SCHEMA_VERSION = 12;
+const VIDEO_EDITOR_SESSION_PREFIX = "neo:opencut:video-editor:";
 
 type LoadState =
 	| {
@@ -52,6 +54,7 @@ type LoadState =
 			message: string;
 			hideHeader: boolean;
 			hiddenAssetTabs?: readonly Tab[];
+			layoutMode?: EditorLayoutMode;
 	  }
 	| {
 			status: "ready";
@@ -59,6 +62,7 @@ type LoadState =
 			projectId: string;
 			hideHeader: boolean;
 			hiddenAssetTabs?: readonly Tab[];
+			layoutMode?: EditorLayoutMode;
 	  }
 	| {
 			status: "error";
@@ -66,48 +70,71 @@ type LoadState =
 			message: string;
 			hideHeader: boolean;
 			hiddenAssetTabs?: readonly Tab[];
+			layoutMode?: EditorLayoutMode;
 	  };
 
-export default function MakeSameMockPage() {
+export default function VideoEditorPage() {
 	const [state, setState] = useState<LoadState>({
 		status: "loading",
-		id: makeSameDemo.id,
-		message: "正在准备同款剪辑项目...",
+		id: "",
+		message: "正在准备剪辑项目...",
 		hideHeader: false,
 	});
 
 	useEffect(() => {
 		const searchParams = new URLSearchParams(window.location.search);
-		const id = searchParams.get("id") || makeSameDemo.id;
+		const id = searchParams.get("id")?.trim() || "";
 		const reset = searchParams.get("reset") === "1";
 		const hideHeader = searchParams.get("hideHeader") === "1";
 		const hiddenAssetTabs = parseHiddenAssetTabs(
 			searchParams.get("hiddenAssetTabs"),
 		);
+		const layoutMode = parseMakeSameLayoutMode(searchParams.get("layout"));
+
+		if (!id) {
+			setState({
+				status: "error",
+				id: "",
+				hideHeader,
+				hiddenAssetTabs,
+				layoutMode,
+				message: "缺少剪辑项目 ID，请从业务页面重新打开剪辑器",
+			});
+			return;
+		}
 
 		setState({
 			status: "loading",
 			id,
-			message: "正在准备同款剪辑项目...",
+			message: "正在准备剪辑项目...",
 			hideHeader,
 			hiddenAssetTabs,
+			layoutMode,
 		});
 
 		ensureMakeSameProject({ id, reset })
 			.then((projectId) => {
-				setState({ status: "ready", id, projectId, hideHeader, hiddenAssetTabs });
+				setState({
+					status: "ready",
+					id,
+					projectId,
+					hideHeader,
+					hiddenAssetTabs,
+					layoutMode,
+				});
 			})
 			.catch((error) => {
-				console.error("[make-same] failed to prepare project", error);
+				console.error("[video-editor] failed to prepare project", error);
 				setState({
 					status: "error",
 					id,
 					hideHeader,
 					hiddenAssetTabs,
+					layoutMode,
 					message:
 						error instanceof Error
 							? error.message
-							: "同款剪辑项目准备失败，请稍后重试",
+							: "剪辑项目准备失败，请稍后重试",
 				});
 			});
 	}, []);
@@ -121,6 +148,7 @@ export default function MakeSameMockPage() {
 				isEmbedded
 				hideHeader={state.hideHeader}
 				hiddenAssetTabs={state.hiddenAssetTabs}
+				defaultLayoutMode={state.layoutMode ?? "vertical-preview"}
 			/>
 		);
 	}
@@ -135,6 +163,16 @@ export default function MakeSameMockPage() {
 			</div>
 		</div>
 	);
+}
+
+function parseMakeSameLayoutMode(
+	value: string | null,
+): EditorLayoutMode | undefined {
+	if (value === "classic" || value === "normal") return "classic";
+	if (value === "vertical-preview" || value === "vertical") {
+		return "vertical-preview";
+	}
+	return undefined;
 }
 
 async function ensureMakeSameProject({
@@ -188,16 +226,16 @@ async function ensureMakeSameProject({
 }
 
 function buildMakeSameProjectId({ id }: { id: string }) {
-	return `make-same-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+	return `video-editor-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 }
 
 function getMakeSameProjectMarkerKey({ projectId }: { projectId: string }) {
-	return `opencut:make-same-project:${projectId}:signature`;
+	return `opencut:video-editor-project:${projectId}:signature`;
 }
 
-function buildMakeSameProjectSignature({ data }: { data: MakeSameEditorData }) {
+function buildMakeSameProjectSignature({ data }: { data: VideoEditorData }) {
 	return JSON.stringify({
-		version: MAKE_SAME_PROJECT_SCHEMA_VERSION,
+		version: VIDEO_EDITOR_PROJECT_SCHEMA_VERSION,
 		id: data.id,
 		videoUrl: data.videoUrl,
 		audioUrl: data.audioUrl,
@@ -260,29 +298,18 @@ async function loadMakeSameData({ id }: { id: string }) {
 	if (sessionData) {
 		return normalizeMakeSameData({ id, payload: sessionData });
 	}
-
-	const response = await fetch(
-		withBasePath(`/api/mock/make-same/${encodeURIComponent(id)}`),
-		{ cache: "no-store" },
-	);
-
-	if (!response.ok) {
-		throw new Error("同款 mock 数据加载失败");
-	}
-
-	const payload = (await response.json()) as Partial<MakeSameEditorData>;
-	return normalizeMakeSameData({ id, payload });
+	throw new Error("未找到剪辑项目数据，请从业务页面重新打开剪辑器");
 }
 
 function loadMakeSameSessionData({ id }: { id: string }) {
 	try {
 		const raw = window.sessionStorage.getItem(
-			`${MAKE_SAME_SESSION_PREFIX}${id}`,
+			`${VIDEO_EDITOR_SESSION_PREFIX}${id}`,
 		);
 		if (!raw) return null;
-		return JSON.parse(raw) as Partial<MakeSameEditorData>;
+		return JSON.parse(raw) as Partial<VideoEditorData>;
 	} catch (error) {
-		console.warn("[make-same] session data parse failed", error);
+		console.warn("[video-editor] session data parse failed", error);
 		return null;
 	}
 }
@@ -292,11 +319,11 @@ function normalizeMakeSameData({
 	payload,
 }: {
 	id: string;
-	payload: Partial<MakeSameEditorData>;
-}): MakeSameEditorData {
+	payload: Partial<VideoEditorData>;
+}): VideoEditorData {
 	const videoSegments = Array.isArray(payload.videoSegments)
 		? payload.videoSegments.filter(
-				(segment): segment is MakeSameVideoSegment =>
+				(segment): segment is VideoEditorVideoSegment =>
 					!!segment &&
 					typeof segment.videoUrl === "string" &&
 					!!segment.videoUrl,
@@ -305,22 +332,40 @@ function normalizeMakeSameData({
 	const duration =
 		typeof payload.duration === "number" && Number.isFinite(payload.duration)
 			? payload.duration
-			: getVideoSegmentsDuration(videoSegments) || makeSameDemo.duration;
+			: getVideoSegmentsDuration(videoSegments);
+	const width = getPositiveSeconds(payload.width);
+	const height = getPositiveSeconds(payload.height);
+
+	if (!width || !height) {
+		throw new Error("剪辑项目缺少视频尺寸信息");
+	}
+	if (!duration) {
+		throw new Error("剪辑项目缺少视频时长信息");
+	}
+	if (!videoSegments?.length && !payload.videoUrl) {
+		throw new Error("剪辑项目缺少可编辑视频素材");
+	}
 
 	return {
-		...makeSameDemo,
-		...payload,
 		id,
+		projectName: payload.projectName || `剪辑项目 ${id}`,
+		title: payload.title || "",
+		width,
+		height,
 		duration,
+		videoUrl: payload.videoUrl || videoSegments?.[0]?.videoUrl || "",
+		audioUrl: payload.audioUrl || "",
+		coverUrl: payload.coverUrl || videoSegments?.[0]?.coverUrl || "",
+		musicName: payload.musicName || "",
 		videoSegments,
-		subtitles: payload.subtitles ?? makeSameDemo.subtitles,
+		subtitles: Array.isArray(payload.subtitles) ? payload.subtitles : [],
 	};
 }
 
 async function createPrimaryAssets({
 	data,
 }: {
-	data: MakeSameEditorData;
+	data: VideoEditorData;
 }): Promise<PrimaryAsset[]> {
 	const segments = normalizePrimaryVideoSegments({ data });
 	const assets: PrimaryAsset[] = [];
@@ -337,10 +382,13 @@ async function createPrimaryAssets({
 			cursor += asset.timelineDurationSeconds;
 		}
 	}
+	if (!assets.length) {
+		throw new Error("剪辑项目视频素材加载失败");
+	}
 	return assets;
 }
 
-function normalizePrimaryVideoSegments({ data }: { data: MakeSameEditorData }) {
+function normalizePrimaryVideoSegments({ data }: { data: VideoEditorData }) {
 	return data.videoSegments?.length
 		? data.videoSegments
 		: [
@@ -355,7 +403,7 @@ function normalizePrimaryVideoSegments({ data }: { data: MakeSameEditorData }) {
 			];
 }
 
-function getVideoSegmentsDuration(segments?: MakeSameVideoSegment[]) {
+function getVideoSegmentsDuration(segments?: VideoEditorVideoSegment[]) {
 	if (!segments?.length) return 0;
 	return segments.reduce((max, segment, index) => {
 		const start = getFiniteSeconds(segment.start) ?? (index === 0 ? 0 : max);
@@ -380,8 +428,8 @@ async function createPrimaryAssetFromSegment({
 	index,
 	startSeconds,
 }: {
-	data: MakeSameEditorData;
-	segment: MakeSameVideoSegment;
+	data: VideoEditorData;
+	segment: VideoEditorVideoSegment;
 	index: number;
 	startSeconds: number;
 }): Promise<PrimaryAsset | null> {
@@ -390,7 +438,7 @@ async function createPrimaryAssetFromSegment({
 		name: `${segment.title || data.title || data.id}-${index + 1}.mp4`,
 		fallbackType: "video/mp4",
 	}).catch((error) => {
-		console.warn("[make-same] video asset fetch failed", error);
+		console.warn("[video-editor] video asset fetch failed", error);
 		return null;
 	});
 
@@ -399,7 +447,7 @@ async function createPrimaryAssetFromSegment({
 			file: videoAsset,
 			thumbnailTimeSeconds: getMakeSameThumbnailTime({ data, segment }),
 		}).catch((error) => {
-			console.warn("[make-same] video metadata read failed", error);
+			console.warn("[video-editor] video metadata read failed", error);
 			return null;
 		});
 		const timelineDurationSeconds =
@@ -413,7 +461,7 @@ async function createPrimaryAssetFromSegment({
 			startSeconds,
 			timelineDurationSeconds,
 			asset: {
-				id: `make-same-video-${data.id}-${index}`,
+				id: `video-editor-video-${data.id}-${index}`,
 				name: videoAsset.name,
 				type: "video",
 				file: videoAsset,
@@ -432,7 +480,7 @@ async function createPrimaryAssetFromSegment({
 		name: `${segment.title || data.title || data.id}-${index + 1}.jpg`,
 		fallbackType: "image/jpeg",
 	}).catch((error) => {
-		console.warn("[make-same] cover asset fetch failed", error);
+		console.warn("[video-editor] cover asset fetch failed", error);
 		return null;
 	});
 
@@ -447,7 +495,7 @@ async function createPrimaryAssetFromSegment({
 		startSeconds,
 		timelineDurationSeconds: imageDuration,
 		asset: {
-			id: `make-same-cover-${data.id}-${index}`,
+			id: `video-editor-cover-${data.id}-${index}`,
 			name: coverAsset.name,
 			type: "image",
 			file: coverAsset,
@@ -463,8 +511,8 @@ function getMakeSameThumbnailTime({
 	data,
 	segment,
 }: {
-	data: MakeSameEditorData;
-	segment?: MakeSameVideoSegment;
+	data: VideoEditorData;
+	segment?: VideoEditorVideoSegment;
 }) {
 	const duration =
 		getPositiveSeconds(segment?.duration) ??
@@ -484,10 +532,7 @@ async function fetchAssetFile({
 }) {
 	if (!url) return null;
 
-	const response = await fetch(
-		withBasePath(`/api/mock/make-same/asset?url=${encodeURIComponent(url)}`),
-		{ cache: "force-cache" },
-	);
+	const response = await fetchAssetResponse({ url });
 	if (!response.ok) return null;
 
 	const blob = await response.blob();
@@ -499,24 +544,38 @@ async function fetchAssetFile({
 	});
 }
 
+async function fetchAssetResponse({ url }: { url: string }) {
+	const directResponse = await fetch(url, { cache: "force-cache" }).catch(
+		(error) => {
+			console.warn("[video-editor] direct asset fetch failed", {
+				url,
+				error,
+			});
+			return null;
+		},
+	);
+
+	return directResponse ?? new Response(null, { status: 400 });
+}
+
 function buildMakeSameProject({
 	projectId,
 	data,
 	primaryAssets,
 }: {
 	projectId: string;
-	data: MakeSameEditorData;
+	data: VideoEditorData;
 	primaryAssets: PrimaryAsset[];
 }): TProject {
 	const now = new Date();
 	const canvasSize = {
-		width: data.width || makeSameDemo.width,
-		height: data.height || makeSameDemo.height,
+		width: data.width,
+		height: data.height,
 	};
 	const projectDurationSeconds =
 		getPrimaryAssetsEndSeconds({ primaryAssets }) ||
 		getPositiveSeconds(data.duration) ||
-		makeSameDemo.duration;
+		0.2;
 	const duration = mediaTimeFromSeconds({ seconds: projectDurationSeconds });
 	const tracks = buildMakeSameTracks({
 		data,
@@ -586,7 +645,7 @@ function buildMakeSameTracks({
 	canvasSize,
 	projectDurationSeconds,
 }: {
-	data: MakeSameEditorData;
+	data: VideoEditorData;
 	primaryAssets: PrimaryAsset[];
 	canvasSize: { width: number; height: number };
 	projectDurationSeconds: number;
@@ -636,6 +695,19 @@ function buildMakeSameTracks({
 			}),
 		}),
 	);
+	const sourceAudioElements = mainElements
+		.filter(
+			(element, index): element is VideoElement =>
+				element.type === "video" &&
+				primaryAssets[index]?.asset.hasAudio !== false,
+		)
+		.map((videoElement) =>
+			withElementId(
+				buildSeparatedAudioElement({
+					sourceElement: videoElement,
+				}),
+			),
+		);
 	const musicElement = data.audioUrl
 		? withElementId(
 				buildLibraryAudioElement({
@@ -676,17 +748,30 @@ function buildMakeSameTracks({
 			muted: false,
 			hidden: false,
 		},
-		audio: musicElement
-			? [
-					{
-						id: generateUUID(),
-						name: data.musicName || "智能推荐音乐",
-						type: "audio",
-						elements: [musicElement],
-						muted: false,
-					},
-				]
-			: [],
+		audio: [
+			...(sourceAudioElements.length
+				? [
+						{
+							id: generateUUID(),
+							name: "原声",
+							type: "audio" as const,
+							elements: sourceAudioElements,
+							muted: false,
+						},
+					]
+				: []),
+			...(musicElement
+				? [
+						{
+							id: generateUUID(),
+							name: data.musicName || "智能推荐音乐",
+							type: "audio" as const,
+							elements: [musicElement],
+							muted: false,
+						},
+					]
+				: []),
+		],
 	};
 }
 
@@ -694,7 +779,7 @@ function getTimelineSubtitles({
 	data,
 	primaryAssets,
 }: {
-	data: MakeSameEditorData;
+	data: VideoEditorData;
 	primaryAssets: PrimaryAsset[];
 }) {
 	const segments = data.videoSegments;
@@ -702,7 +787,7 @@ function getTimelineSubtitles({
 		return data.subtitles;
 	}
 
-	const rebasedSubtitles: MakeSameSubtitle[] = [];
+	const rebasedSubtitles: VideoEditorSubtitle[] = [];
 	let sourceCursor = 0;
 
 	for (const [index, segment] of segments.entries()) {
@@ -745,7 +830,7 @@ function getTimelineSubtitles({
 	return rebasedSubtitles.length ? rebasedSubtitles : data.subtitles;
 }
 
-function subtitleToCaption({ subtitle }: { subtitle: MakeSameSubtitle }) {
+function subtitleToCaption({ subtitle }: { subtitle: VideoEditorSubtitle }) {
 	const style = subtitle.style ?? {};
 	return {
 		text: subtitle.text,
@@ -796,7 +881,7 @@ function buildPrimaryTimelineElement({
 	if (primaryAsset.mediaType === "video") {
 		return {
 			...element,
-			isSourceAudioEnabled: true,
+			isSourceAudioEnabled: false,
 		} as VideoElement;
 	}
 

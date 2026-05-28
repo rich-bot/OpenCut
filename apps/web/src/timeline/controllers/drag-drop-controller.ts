@@ -20,6 +20,7 @@ import type { Command } from "@/commands/base-command";
 import { computeDropTarget } from "@/timeline/components/drop-target";
 import type { TimelineDragSource } from "@/timeline/drag-source";
 import type {
+	Bookmark,
 	TrackType,
 	DropTarget,
 	ElementType,
@@ -30,7 +31,21 @@ import type {
 import type { TimelineDragData } from "@/timeline/drag";
 import type { MediaAsset } from "@/media/types";
 import type { ProcessedMediaAsset } from "@/media/processing";
-import { roundFrameTime, type MediaTime } from "@/wasm";
+import {
+	addMediaTime,
+	mediaTime,
+	roundFrameTime,
+	subMediaTime,
+	TICKS_PER_SECOND,
+	type MediaTime,
+} from "@/wasm";
+import {
+	buildTimelineSnapPoints,
+	getTimelineSnapThresholdInTicks,
+	resolveTimelineSnap,
+	type SnapPoint,
+} from "@/timeline/snapping";
+import { getBookmarkSnapPoints } from "@/timeline/bookmarks";
 
 // --- Config ---
 
@@ -42,8 +57,12 @@ export interface DragDropConfig {
 	getActiveProjectFps: () => FrameRate | null;
 	getActiveProjectId: () => string | null;
 	getSceneTracks: () => SceneTracks;
+	getSceneBookmarks: () => Bookmark[];
 	getCurrentPlayheadTime: () => MediaTime;
 	getMediaAssets: () => MediaAsset[];
+	snappingEnabled: boolean;
+	isShiftHeld: () => boolean;
+	onSnapPointChange?: (snapPoint: SnapPoint | null) => void;
 	dragSource: TimelineDragSource;
 	addMediaAsset: (args: {
 		projectId: string;
@@ -131,6 +150,21 @@ function orderedTracks({
 	return [...sceneTracks.overlay, sceneTracks.main, ...sceneTracks.audio];
 }
 
+function mouseXToTimelineTime({
+	mouseX,
+	zoomLevel,
+}: {
+	mouseX: number;
+	zoomLevel: number;
+}): MediaTime {
+	return mediaTime({
+		ticks: Math.round(
+			Math.max(0, mouseX / (BASE_TIMELINE_PIXELS_PER_SECOND * zoomLevel)) *
+				TICKS_PER_SECOND,
+		),
+	});
+}
+
 // --- Controller ---
 
 export class DragDropController {
@@ -209,6 +243,23 @@ export class DragDropController {
 			mediaAssets: this.config.getMediaAssets(),
 		});
 		const targetElementTypes = getTargetElementTypesForDrag({ dragData });
+		const fps = this.config.getActiveProjectFps();
+		const frameStartTime = fps
+			? roundFrameTime({
+					time: mouseXToTimelineTime({
+						mouseX: coords.mouseX,
+						zoomLevel: this.config.zoomLevel,
+					}),
+					fps,
+				})
+			: mouseXToTimelineTime({
+					mouseX: coords.mouseX,
+					zoomLevel: this.config.zoomLevel,
+				});
+		const snapped = this.snapDropStartTime({
+			startTime: frameStartTime,
+			duration,
+		});
 
 		const sceneTracks = this.config.getSceneTracks();
 		const target = computeDropTarget({
@@ -221,15 +272,12 @@ export class DragDropController {
 			elementDuration: duration,
 			pixelsPerSecond: BASE_TIMELINE_PIXELS_PER_SECOND,
 			zoomLevel: this.config.zoomLevel,
+			startTimeOverride: snapped.startTime,
 			targetElementTypes,
 		});
 
-		const fps = this.config.getActiveProjectFps();
-		target.xPosition = fps
-			? roundFrameTime({ time: target.xPosition, fps })
-			: target.xPosition;
-
 		this.setOver({ dropTarget: target, elementType });
+		this.config.onSnapPointChange?.(snapped.snapPoint);
 		event.dataTransfer.dropEffect = "copy";
 	}
 
@@ -285,6 +333,7 @@ export class DragDropController {
 	}
 
 	private setIdle(): void {
+		this.config.onSnapPointChange?.(null);
 		this.state = { kind: "idle" };
 		this.notify();
 	}
@@ -312,6 +361,62 @@ export class DragDropController {
 		return {
 			mouseX: event.clientX - referenceRect.left + scrollLeft,
 			mouseY: event.clientY - referenceRect.top + scrollTop - headerHeight,
+		};
+	}
+
+	private snapDropStartTime({
+		startTime,
+		duration,
+	}: {
+		startTime: MediaTime;
+		duration: MediaTime;
+	}): { startTime: MediaTime; snapPoint: SnapPoint | null } {
+		if (!this.config.snappingEnabled || this.config.isShiftHeld()) {
+			return { startTime, snapPoint: null };
+		}
+
+		const snapPoints = buildTimelineSnapPoints({
+			sources: [
+				() =>
+					getBookmarkSnapPoints({
+						bookmarks: this.config.getSceneBookmarks(),
+					}),
+			],
+		});
+		const maxSnapDistance = getTimelineSnapThresholdInTicks({
+			zoomLevel: this.config.zoomLevel,
+		});
+		const startSnap = resolveTimelineSnap({
+			targetTime: startTime,
+			snapPoints,
+			maxSnapDistance,
+		});
+		const endSnap = resolveTimelineSnap({
+			targetTime: addMediaTime({ a: startTime, b: duration }),
+			snapPoints,
+			maxSnapDistance,
+		});
+
+		if (!startSnap.snapPoint && !endSnap.snapPoint) {
+			return { startTime, snapPoint: null };
+		}
+
+		if (
+			startSnap.snapPoint &&
+			(!endSnap.snapPoint || startSnap.snapDistance <= endSnap.snapDistance)
+		) {
+			return {
+				startTime: startSnap.snappedTime,
+				snapPoint: startSnap.snapPoint,
+			};
+		}
+
+		return {
+			startTime: subMediaTime({
+				a: endSnap.snappedTime,
+				b: duration,
+			}),
+			snapPoint: endSnap.snapPoint,
 		};
 	}
 

@@ -335,6 +335,8 @@ export function Timeline() {
 		containerRef: tracksContainerRef,
 		tracksScrollRef,
 		zoomLevel,
+		snappingEnabled,
+		onSnapPointChange: handleSnapPointChange,
 	});
 
 	const {
@@ -407,7 +409,10 @@ export function Timeline() {
 	const showSnapIndicator =
 		snappingEnabled &&
 		currentSnapPoint !== null &&
-		(isElementDragging || bookmarkDragState.isDragging || isResizing);
+		(isElementDragging ||
+			bookmarkDragState.isDragging ||
+			isResizing ||
+			isDragOver);
 
 	const {
 		handleTracksMouseDown,

@@ -180,18 +180,21 @@ const textElementParams: ElementParamDefinition[] = [
 		default: 15,
 		min: 1,
 		step: 1,
+		keyframable: false,
 	},
 	{
 		key: "color",
 		label: editorT("params.color"),
 		type: "color",
 		default: "#ffffff",
+		keyframable: false,
 	},
 	{
 		key: "stroke.color",
 		label: editorT("params.strokeColor"),
 		type: "color",
 		default: "#000000",
+		keyframable: false,
 	},
 	{
 		key: "stroke.width",
@@ -200,6 +203,7 @@ const textElementParams: ElementParamDefinition[] = [
 		default: 0,
 		min: 0,
 		step: 0.1,
+		keyframable: false,
 	},
 	{
 		key: "textAlign",
@@ -254,6 +258,7 @@ const textElementParams: ElementParamDefinition[] = [
 		default: DEFAULTS.text.letterSpacing,
 		min: -100,
 		step: 0.1,
+		keyframable: false,
 	},
 	{
 		key: "lineHeight",
@@ -262,6 +267,7 @@ const textElementParams: ElementParamDefinition[] = [
 		default: DEFAULTS.text.lineHeight,
 		min: 0.1,
 		step: 0.1,
+		keyframable: false,
 	},
 	{
 		key: "background.enabled",

@@ -26,6 +26,7 @@ import type {
 	DropTarget,
 	ElementRef,
 	ElementDragView,
+	Bookmark,
 	SceneTracks,
 	TimelineElement,
 	TimelineTrack,
@@ -48,6 +49,7 @@ export interface InputAdapter {
 
 export interface SceneReader {
 	getTracks: () => SceneTracks;
+	getBookmarks: () => Bookmark[];
 	getActiveFps: () => FrameRate | null;
 }
 
@@ -467,6 +469,7 @@ export class ElementInteractionController {
 			group,
 			anchorStartTime: frameSnappedTime,
 			tracks: scene.getTracks(),
+			bookmarks: scene.getBookmarks(),
 			playheadTime: playback.getCurrentTime(),
 			zoomLevel: viewport.getZoomLevel(),
 		});

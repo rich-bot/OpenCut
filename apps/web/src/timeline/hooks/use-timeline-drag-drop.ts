@@ -1,16 +1,20 @@
 import { useEffect, useReducer, useState, type RefObject } from "react";
 import { useEditor } from "@/editor/use-editor";
 import { useCommittedRef } from "@/hooks/use-committed-ref";
+import { useShiftKey } from "@/hooks/use-shift-key";
 import {
 	DragDropController,
 	type DragDropConfig,
 } from "@/timeline/controllers/drag-drop-controller";
+import type { SnapPoint } from "@/timeline/snapping";
 
 interface UseTimelineDragDropProps {
 	containerRef: RefObject<HTMLDivElement | null>;
 	headerRef?: RefObject<HTMLElement | null>;
 	tracksScrollRef?: RefObject<HTMLDivElement | null>;
 	zoomLevel: number;
+	snappingEnabled: boolean;
+	onSnapPointChange?: (snapPoint: SnapPoint | null) => void;
 }
 
 export function useTimelineDragDrop({
@@ -18,8 +22,11 @@ export function useTimelineDragDrop({
 	headerRef,
 	tracksScrollRef,
 	zoomLevel,
+	snappingEnabled,
+	onSnapPointChange,
 }: UseTimelineDragDropProps) {
 	const editor = useEditor();
+	const isShiftHeldRef = useShiftKey();
 
 	const config: DragDropConfig = {
 		zoomLevel,
@@ -30,8 +37,12 @@ export function useTimelineDragDrop({
 		getActiveProjectId: () =>
 			editor.project.getActiveOrNull()?.metadata.id ?? null,
 		getSceneTracks: () => editor.scenes.getActiveScene().tracks,
+		getSceneBookmarks: () => editor.scenes.getActiveScene()?.bookmarks ?? [],
 		getCurrentPlayheadTime: () => editor.playback.getCurrentTime(),
 		getMediaAssets: () => editor.media.getAssets(),
+		snappingEnabled,
+		isShiftHeld: () => isShiftHeldRef.current,
+		onSnapPointChange,
 		dragSource: editor.timeline.dragSource,
 		addMediaAsset: (args) => editor.media.addMediaAsset(args),
 		executeCommand: (command) => editor.command.execute({ command }),

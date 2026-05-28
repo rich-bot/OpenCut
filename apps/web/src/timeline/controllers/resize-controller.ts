@@ -22,11 +22,13 @@ import {
 	resolveTimelineSnap,
 	type SnapPoint,
 } from "@/timeline/snapping";
+import { getBookmarkSnapPoints } from "@/timeline/bookmarks";
 import { getElementEdgeSnapPoints } from "@/timeline/element-snap-source";
 import { getPlayheadSnapPoints } from "@/timeline/playhead-snap-source";
 import { getAnimationKeyframeSnapPointsForTimeline } from "@/timeline/animation-snap-points";
 import {
 	isRetimableElement,
+	type Bookmark,
 	type SceneTracks,
 	type TimelineElement,
 	type TimelineTrack,
@@ -54,6 +56,7 @@ export interface ResizeConfig {
 	snappingEnabled: boolean;
 	isShiftHeld: () => boolean;
 	getSceneTracks: () => SceneTracks;
+	getSceneBookmarks: () => Bookmark[];
 	getCurrentPlayheadTime: () => MediaTime;
 	getActiveProjectFps: () => FrameRate | null;
 	selectedElements: ElementRef[];
@@ -112,7 +115,8 @@ export function buildResizeMembers({
 		const rightNeighborBound = otherElements
 			.filter(
 				(el) =>
-					el.startTime >= addMediaTime({ a: element.startTime, b: element.duration }),
+					el.startTime >=
+					addMediaTime({ a: element.startTime, b: element.duration }),
 			)
 			.reduce<MediaTime | null>(
 				(bound, el) =>
@@ -278,6 +282,7 @@ export class ResizeController {
 		}
 
 		const tracks = this.config.getSceneTracks();
+		const bookmarks = this.config.getSceneBookmarks();
 		const playheadTime = this.config.getCurrentPlayheadTime();
 		const excludeElementIds = new Set(session.members.map((m) => m.elementId));
 
@@ -285,6 +290,7 @@ export class ResizeController {
 			sources: [
 				() => getElementEdgeSnapPoints({ tracks, excludeElementIds }),
 				() => getPlayheadSnapPoints({ playheadTime }),
+				() => getBookmarkSnapPoints({ bookmarks }),
 				() =>
 					getAnimationKeyframeSnapPointsForTimeline({
 						tracks,
@@ -314,7 +320,10 @@ export class ResizeController {
 			) {
 				closestSnapDistance = snapResult.snapDistance;
 				closestSnapPoint = snapResult.snapPoint;
-				deltaTime = subMediaTime({ a: snapResult.snappedTime, b: baseEdgeTime });
+				deltaTime = subMediaTime({
+					a: snapResult.snappedTime,
+					b: baseEdgeTime,
+				});
 			}
 		}
 
