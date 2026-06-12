@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PanelView } from "@/components/editor/panels/assets/views/base-panel";
 import { MediaDragOverlay } from "@/components/editor/panels/assets/drag-overlay";
 import { DraggableItem } from "@/components/editor/panels/assets/draggable-item";
@@ -47,9 +47,11 @@ import {
 } from "@/components/editor/panels/assets/assets-panel-store";
 import { MASKABLE_ELEMENT_TYPES } from "@/timeline";
 import type { MediaAsset } from "@/media/types";
+import { getOpenCutAssetProxyUrl } from "@/utils/asset-proxy";
 import { cn } from "@/utils/ui";
 import {
 	CloudUploadIcon,
+	Folder03Icon,
 	GridViewIcon,
 	LeftToRightListDashIcon,
 	SortingOneNineIcon,
@@ -65,6 +67,194 @@ const MEDIA_SORT_LABELS: Record<MediaSortKey, string> = {
 	duration: "时长",
 	size: "文件大小",
 };
+
+type NeoWebMaterialMediaType = "video" | "image" | "audio";
+
+type NeoWebMaterialImportAsset = {
+	id?: string | number;
+	url?: string;
+	name?: string;
+	mediaType?: NeoWebMaterialMediaType;
+	materialType?: "VIDEO" | "IMAGE" | "AUDIO" | "GROUP";
+	originalName?: string;
+	fileSize?: number;
+	duration?: number;
+	thumbnailUrl?: string;
+	source?: "asset" | "group-item";
+	groupId?: string | number;
+	groupTitle?: string;
+	segmentIndex?: number;
+};
+
+type NeoWebMaterialPickerMessage =
+	| {
+			source: "neo-web";
+			type: "material-picker-opened";
+			requestId?: string;
+			projectId?: string;
+	  }
+	| {
+			source: "neo-web";
+			type: "material-picker-picked";
+			requestId?: string;
+			projectId?: string;
+			assets?: NeoWebMaterialImportAsset[];
+	  }
+	| {
+			source: "neo-web";
+			type: "material-picker-cancelled";
+			requestId?: string;
+			projectId?: string;
+	  };
+
+const DEFAULT_EXTENSION_BY_MEDIA_TYPE: Record<NeoWebMaterialMediaType, string> = {
+	video: "mp4",
+	image: "png",
+	audio: "mp3",
+};
+
+const MIME_BY_EXTENSION: Record<string, string> = {
+	mp4: "video/mp4",
+	webm: "video/webm",
+	mov: "video/quicktime",
+	m4v: "video/x-m4v",
+	jpg: "image/jpeg",
+	jpeg: "image/jpeg",
+	png: "image/png",
+	gif: "image/gif",
+	webp: "image/webp",
+	bmp: "image/bmp",
+	svg: "image/svg+xml",
+	mp3: "audio/mpeg",
+	wav: "audio/wav",
+	m4a: "audio/mp4",
+	aac: "audio/aac",
+	flac: "audio/flac",
+	ogg: "audio/ogg",
+	opus: "audio/opus",
+};
+
+const DEFAULT_MIME_BY_MEDIA_TYPE: Record<NeoWebMaterialMediaType, string> = {
+	video: "video/mp4",
+	image: "image/png",
+	audio: "audio/mpeg",
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return !!value && typeof value === "object";
+}
+
+function isNeoWebMaterialPickerMessage(
+	data: unknown,
+): data is NeoWebMaterialPickerMessage {
+	if (!isRecord(data)) return false;
+	return (
+		data.source === "neo-web" &&
+		(data.type === "material-picker-opened" ||
+			data.type === "material-picker-picked" ||
+			data.type === "material-picker-cancelled")
+	);
+}
+
+function createMaterialPickerRequestId() {
+	if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+		return crypto.randomUUID();
+	}
+	return `material-picker-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function inferMediaType(asset: NeoWebMaterialImportAsset): NeoWebMaterialMediaType {
+	if (
+		asset.mediaType === "video" ||
+		asset.mediaType === "image" ||
+		asset.mediaType === "audio"
+	) {
+		return asset.mediaType;
+	}
+	if (asset.materialType === "IMAGE") return "image";
+	if (asset.materialType === "AUDIO") return "audio";
+	return "video";
+}
+
+function getExtension(value?: string) {
+	const cleanValue = String(value || "")
+		.split("?")[0]
+		.split("#")[0];
+	const match = cleanValue.match(/\.([a-z0-9]+)$/i);
+	return match?.[1]?.toLowerCase() || "";
+}
+
+function sanitizeFileName(value: string) {
+	const withoutReservedCharacters = value
+		.trim()
+		.replace(/[\\/:*?"<>|]/g, "_")
+		.replace(/\s+/g, " ");
+	const withoutControlCharacters = Array.from(withoutReservedCharacters)
+		.filter((character) => character.charCodeAt(0) >= 32)
+		.join("");
+
+	return withoutControlCharacters.slice(0, 140) || "素材";
+}
+
+function buildMaterialFileName(asset: NeoWebMaterialImportAsset) {
+	const mediaType = inferMediaType(asset);
+	const baseName = sanitizeFileName(
+		asset.originalName || asset.name || `素材-${asset.id ?? Date.now()}`,
+	);
+	const existingExtension = getExtension(baseName);
+	if (existingExtension) return baseName;
+
+	const urlExtension = getExtension(asset.url);
+	const extension = urlExtension || DEFAULT_EXTENSION_BY_MEDIA_TYPE[mediaType];
+	return `${baseName}.${extension}`;
+}
+
+function inferMimeType(asset: NeoWebMaterialImportAsset) {
+	const mediaType = inferMediaType(asset);
+	const extension =
+		getExtension(asset.originalName) ||
+		getExtension(asset.name) ||
+		getExtension(asset.url);
+	return (
+		MIME_BY_EXTENSION[extension] || DEFAULT_MIME_BY_MEDIA_TYPE[mediaType]
+	);
+}
+
+function isUsableBlobType({
+	blobType,
+	mediaType,
+}: {
+	blobType: string;
+	mediaType: NeoWebMaterialMediaType;
+}) {
+	return blobType.toLowerCase().startsWith(`${mediaType}/`);
+}
+
+async function fetchMaterialAssetFile(asset: NeoWebMaterialImportAsset) {
+	const url = String(asset.url || "").trim();
+	if (!url) {
+		throw new Error("素材缺少下载地址");
+	}
+
+	const response = await fetch(getOpenCutAssetProxyUrl({ url }), {
+		cache: "force-cache",
+	});
+	if (!response.ok) {
+		throw new Error(`下载失败：${response.status}`);
+	}
+
+	const blob = await response.blob();
+	const mediaType = inferMediaType(asset);
+	const blobType = blob.type || "";
+	const fileType = isUsableBlobType({ blobType, mediaType })
+		? blobType
+		: inferMimeType(asset);
+
+	return new File([blob], buildMaterialFileName(asset), {
+		type: fileType,
+		lastModified: Date.now(),
+	});
+}
 
 export function MediaView() {
 	const editor = useEditor();
@@ -82,9 +272,24 @@ export function MediaView() {
 	} = useAssetsPanelStore();
 
 	const [isProcessing, setIsProcessing] = useState(false);
+	const [isImportingFromMaterialCenter, setIsImportingFromMaterialCenter] =
+		useState(false);
+	const [pendingMaterialRequestId, setPendingMaterialRequestId] = useState<
+		string | null
+	>(null);
+	const [isMaterialPickerOpened, setIsMaterialPickerOpened] = useState(false);
+	const pendingMaterialRequestIdRef = useRef<string | null>(null);
 	const [progress, setProgress] = useState(0);
+	const isMediaActionDisabled =
+		isProcessing || isImportingFromMaterialCenter || !!pendingMaterialRequestId;
 
-	const processFiles = async ({ files }: { files: File[] }) => {
+	const clearPendingMaterialRequest = useCallback(() => {
+		pendingMaterialRequestIdRef.current = null;
+		setPendingMaterialRequestId(null);
+		setIsMaterialPickerOpened(false);
+	}, []);
+
+	const processFiles = useCallback(async ({ files }: { files: File[] }) => {
 		if (!files || files.length === 0) return;
 		if (!activeProject) {
 			toast.error("当前没有打开的项目");
@@ -120,7 +325,111 @@ export function MediaView() {
 			setIsProcessing(false);
 			setProgress(0);
 		}
-	};
+	}, [activeProject, editor]);
+
+	const openMaterialCenter = useCallback(() => {
+		if (!activeProject) {
+			toast.error("当前没有打开的项目");
+			return;
+		}
+		if (typeof window === "undefined" || window.parent === window) {
+			toast.warning("请在业务页面中打开剪辑器后再从素材中心导入");
+			return;
+		}
+		if (pendingMaterialRequestId) return;
+
+		const requestId = createMaterialPickerRequestId();
+		pendingMaterialRequestIdRef.current = requestId;
+		setIsMaterialPickerOpened(false);
+		setPendingMaterialRequestId(requestId);
+		window.parent.postMessage(
+			{
+				source: "opencut",
+				type: "request-material-picker",
+				requestId,
+				projectId: activeProject.metadata.id,
+			},
+			"*",
+		);
+	}, [activeProject, pendingMaterialRequestId]);
+
+	useEffect(() => {
+		if (!pendingMaterialRequestId || isMaterialPickerOpened) return;
+
+		const timer = window.setTimeout(() => {
+			toast.error("素材中心没有响应", {
+				description: "请刷新业务页面后重新打开剪辑器再试",
+			});
+			clearPendingMaterialRequest();
+		}, 8000);
+
+		return () => window.clearTimeout(timer);
+	}, [
+		pendingMaterialRequestId,
+		isMaterialPickerOpened,
+		clearPendingMaterialRequest,
+	]);
+
+	useEffect(() => {
+		let cancelled = false;
+
+		const handleMaterialPickerMessage = (event: MessageEvent) => {
+			const requestId = pendingMaterialRequestIdRef.current;
+			if (!requestId) return;
+			if (!isNeoWebMaterialPickerMessage(event.data)) return;
+			if (event.data.requestId !== requestId) return;
+
+			if (event.data.type === "material-picker-opened") {
+				setIsMaterialPickerOpened(true);
+				return;
+			}
+
+			if (event.data.type === "material-picker-cancelled") {
+				clearPendingMaterialRequest();
+				return;
+			}
+
+			const assets = Array.isArray(event.data.assets)
+				? event.data.assets.filter((asset) => String(asset.url || "").trim())
+				: [];
+			if (!assets.length) {
+				toast.warning("没有可导入的素材");
+				clearPendingMaterialRequest();
+				return;
+			}
+
+			setIsImportingFromMaterialCenter(true);
+			void (async () => {
+				try {
+					const files = await Promise.all(
+						assets.map((asset) => fetchMaterialAssetFile(asset)),
+					);
+					if (!cancelled) {
+						await processFiles({ files });
+					}
+				} catch (error) {
+					console.error("Error importing material center assets:", error);
+					toast.error("素材中心导入失败", {
+						description:
+							error instanceof Error
+								? error.message
+								: "请检查素材地址或跨域配置",
+					});
+				} finally {
+					if (!cancelled) {
+						setIsImportingFromMaterialCenter(false);
+						clearPendingMaterialRequest();
+					}
+				}
+			})();
+		};
+
+		window.addEventListener("message", handleMaterialPickerMessage);
+		return () => {
+			cancelled = true;
+			window.removeEventListener("message", handleMaterialPickerMessage);
+		};
+	}, [clearPendingMaterialRequest, processFiles]);
 
 	const { isDragOver, dragProps, openFilePicker, fileInputProps } =
 		useFileUpload({
@@ -204,11 +513,12 @@ export function MediaView() {
 					<MediaActions
 						mediaViewMode={mediaViewMode}
 						setMediaViewMode={setMediaViewMode}
-						isProcessing={isProcessing}
+						isProcessing={isMediaActionDisabled}
 						sortBy={mediaSortBy}
 						sortOrder={mediaSortOrder}
 						onSort={handleSort}
 						onImport={openFilePicker}
+						onImportFromMaterialCenter={openMaterialCenter}
 					/>
 				}
 				className={cn(isDragOver && "bg-accent/30")}
@@ -218,7 +528,7 @@ export function MediaView() {
 				{isDragOver || filteredMediaItems.length === 0 ? (
 					<MediaDragOverlay
 						isVisible={true}
-						isProcessing={isProcessing}
+						isProcessing={isProcessing || isImportingFromMaterialCenter}
 						progress={progress}
 						onClick={openFilePicker}
 					/>
@@ -520,6 +830,7 @@ function MediaActions({
 	sortOrder,
 	onSort,
 	onImport,
+	onImportFromMaterialCenter,
 }: {
 	mediaViewMode: MediaViewMode;
 	setMediaViewMode: (mode: MediaViewMode) => void;
@@ -528,6 +839,7 @@ function MediaActions({
 	sortOrder: MediaSortOrder;
 	onSort: ({ key }: { key: MediaSortKey }) => void;
 	onImport: () => void;
+	onImportFromMaterialCenter: () => void;
 }) {
 	return (
 		<div className="flex gap-1.5">
@@ -609,6 +921,16 @@ function MediaActions({
 					</TooltipContent>
 				</Tooltip>
 			</TooltipProvider>
+			<Button
+				variant="outline"
+				onClick={onImportFromMaterialCenter}
+				disabled={isProcessing}
+				size="sm"
+				className="items-center justify-center gap-1.5"
+			>
+				<HugeiconsIcon icon={Folder03Icon} />
+				素材中心
+			</Button>
 			<Button
 				variant="outline"
 				onClick={onImport}

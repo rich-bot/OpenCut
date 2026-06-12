@@ -32,7 +32,6 @@ import type {
 	CreateTimelineElement,
 	ImageElement,
 	SceneTracks,
-	TimelineElement,
 	TScene,
 	VideoElement,
 } from "@/timeline";
@@ -92,24 +91,28 @@ export default function VideoEditorPage() {
 		const layoutMode = parseMakeSameLayoutMode(searchParams.get("layout"));
 
 		if (!id) {
-			setState({
-				status: "error",
-				id: "",
-				hideHeader,
-				hiddenAssetTabs,
-				layoutMode,
-				message: "缺少剪辑项目 ID，请从业务页面重新打开剪辑器",
+			queueMicrotask(() => {
+				setState({
+					status: "error",
+					id: "",
+					hideHeader,
+					hiddenAssetTabs,
+					layoutMode,
+					message: "缺少剪辑项目 ID，请从业务页面重新打开剪辑器",
+				});
 			});
 			return;
 		}
 
-		setState({
-			status: "loading",
-			id,
-			message: "正在准备剪辑项目...",
-			hideHeader,
-			hiddenAssetTabs,
-			layoutMode,
+		queueMicrotask(() => {
+			setState({
+				status: "loading",
+				id,
+				message: "正在准备剪辑项目...",
+				hideHeader,
+				hiddenAssetTabs,
+				layoutMode,
+			});
 		});
 
 		ensureMakeSameProject({ id, reset })
@@ -307,11 +310,18 @@ function loadMakeSameSessionData({ id }: { id: string }) {
 			`${VIDEO_EDITOR_SESSION_PREFIX}${id}`,
 		);
 		if (!raw) return null;
-		return JSON.parse(raw) as Partial<VideoEditorData>;
+		const parsed: unknown = JSON.parse(raw);
+		return isVideoEditorDataPayload(parsed) ? parsed : null;
 	} catch (error) {
 		console.warn("[video-editor] session data parse failed", error);
 		return null;
 	}
+}
+
+function isVideoEditorDataPayload(
+	value: unknown,
+): value is Partial<VideoEditorData> {
+	return !!value && typeof value === "object";
 }
 
 function normalizeMakeSameData({
@@ -465,6 +475,7 @@ async function createPrimaryAssetFromSegment({
 				name: videoAsset.name,
 				type: "video",
 				file: videoAsset,
+				url: URL.createObjectURL(videoAsset),
 				width: videoData?.width ?? data.width,
 				height: videoData?.height ?? data.height,
 				duration: timelineDurationSeconds,
@@ -499,6 +510,7 @@ async function createPrimaryAssetFromSegment({
 			name: coverAsset.name,
 			type: "image",
 			file: coverAsset,
+			url: URL.createObjectURL(coverAsset),
 			width: data.width,
 			height: data.height,
 			duration: imageDuration,
@@ -868,31 +880,35 @@ function buildPrimaryTimelineElement({
 	duration: MediaTime;
 	startTime: MediaTime;
 }): VideoElement | ImageElement {
-	const element = withElementId(
-		buildElementFromMedia({
-			mediaId: primaryAsset.asset.id,
-			mediaType: primaryAsset.mediaType,
-			name: primaryAsset.asset.name,
-			duration,
-			startTime,
-		}),
-	);
+	const element = buildElementFromMedia({
+		mediaId: primaryAsset.asset.id,
+		mediaType: primaryAsset.mediaType,
+		name: primaryAsset.asset.name,
+		duration,
+		startTime,
+	});
 
 	if (primaryAsset.mediaType === "video") {
-		return {
+		if (element.type !== "video") {
+			throw new Error("主轨素材类型不匹配");
+		}
+		return withElementId({
 			...element,
 			isSourceAudioEnabled: false,
-		} as VideoElement;
+		});
 	}
 
-	return element as ImageElement;
+	if (element.type !== "image") {
+		throw new Error("主轨素材类型不匹配");
+	}
+	return withElementId(element);
 }
 
 function withElementId<TElement extends CreateTimelineElement>(
 	element: TElement,
-) {
+): TElement & { id: string } {
 	return {
-		id: generateUUID(),
 		...element,
-	} as TElement & TimelineElement;
+		id: generateUUID(),
+	};
 }

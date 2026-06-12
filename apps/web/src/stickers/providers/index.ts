@@ -3,10 +3,12 @@ import type { StickerProvider } from "@/stickers/types";
 import { flagsProvider } from "./flags";
 import { logosProvider } from "./logos";
 import { miaosiProvider } from "./miaosi";
+import { neoImageMaterialsProvider } from "./neo-image-materials";
 import { shapesProvider } from "./shapes";
 
 const defaultProviders: StickerProvider[] = [
 	miaosiProvider,
+	neoImageMaterialsProvider,
 	logosProvider,
 	flagsProvider,
 	shapesProvider,

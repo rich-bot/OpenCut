@@ -36,7 +36,6 @@ import {
 	ScissorIcon,
 	SearchAddIcon,
 	SearchMinusIcon,
-	SnowIcon,
 	Copy01Icon,
 	AlignLeftIcon,
 	AlignRightIcon,
@@ -182,13 +181,6 @@ function ToolbarLeftSection() {
 					onClick={({ event }) =>
 						handleAction({ action: "duplicate-selected", event })
 					}
-				/>
-
-				<ToolbarButton
-					icon={<HugeiconsIcon icon={SnowIcon} />}
-					tooltip={editorT("timeline.freezeFrameComingSoon")}
-					disabled
-					onClick={({ event }) => event.stopPropagation()}
 				/>
 
 				<ToolbarButton

@@ -325,7 +325,10 @@ async function resolveStickerNode({
 
 	let source: Awaited<ReturnType<typeof loadStickerSource>>;
 	try {
-		source = await loadStickerSource({ stickerId: node.params.stickerId });
+		source = await loadStickerSource({
+			stickerId: node.params.stickerId,
+			sourceUrl: node.params.sourceUrl,
+		});
 	} catch (error) {
 		console.warn("Failed to resolve sticker for preview:", error);
 		return null;

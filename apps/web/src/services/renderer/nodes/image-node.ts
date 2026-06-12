@@ -6,6 +6,7 @@ import {
 
 export interface ImageNodeParams extends VisualNodeParams {
 	url: string;
+	fallbackUrl?: string;
 	maxSourceSize?: number;
 }
 
@@ -19,23 +20,25 @@ const imageSourceCache = new Map<string, Promise<CachedImageSource>>();
 
 export function loadImageSource({
 	url,
+	fallbackUrl,
 	maxSourceSize,
 }: {
 	url: string;
+	fallbackUrl?: string;
 	maxSourceSize?: number;
 }): Promise<CachedImageSource> {
-	const cacheKey = `${url}::${maxSourceSize ?? "full"}`;
+	const cacheKey = `${url}::${fallbackUrl ?? ""}::${maxSourceSize ?? "full"}`;
 
 	const cached = imageSourceCache.get(cacheKey);
 	if (cached) return cached;
 
-	const promise = (async (): Promise<CachedImageSource> => {
+	const loadImage = async (sourceUrl: string): Promise<CachedImageSource> => {
 		const image = new Image();
 
 		await new Promise<void>((resolve, reject) => {
 			image.onload = () => resolve();
 			image.onerror = () => reject(new Error("Image load failed"));
-			image.src = url;
+			image.src = sourceUrl;
 		});
 
 		const naturalWidth = image.naturalWidth;
@@ -62,6 +65,17 @@ export function loadImageSource({
 		}
 
 		return { source: image, width: naturalWidth, height: naturalHeight };
+	};
+
+	const promise = (async (): Promise<CachedImageSource> => {
+		try {
+			return await loadImage(url);
+		} catch (error) {
+			if (fallbackUrl && fallbackUrl !== url) {
+				return await loadImage(fallbackUrl);
+			}
+			throw error;
+		}
 	})();
 
 	imageSourceCache.set(cacheKey, promise);

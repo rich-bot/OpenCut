@@ -30,6 +30,11 @@ import { useStickersStore } from "@/stickers/stickers-store";
 import { cn } from "@/utils/ui";
 import { HappyIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { ImageMaterialStickersView } from "./image-materials-view";
+
+function isStickerCategory(value: string): value is StickerCategory {
+	return value in STICKER_CATEGORIES;
+}
 
 export function StickersView() {
 	const {
@@ -58,13 +63,18 @@ export function StickersView() {
 					placeholder={editorT("stickers.searchPlaceholder")}
 					value={searchQuery}
 					onChange={(e) => {
-						setSearchQuery({ query: e.target.value });
-						void searchStickers({ query: e.target.value });
+						const query = e.target.value;
+						setSearchQuery({ query });
+						if (selectedCategory !== "imageMaterials") {
+							void searchStickers({ query });
+						}
 					}}
 					showClearIcon
 					onClear={() => {
 						setSearchQuery({ query: "" });
-						void searchStickers({ query: "" });
+						if (selectedCategory !== "imageMaterials") {
+							void searchStickers({ query: "" });
+						}
 					}}
 					className="w-full"
 					containerClassName="w-full"
@@ -74,7 +84,9 @@ export function StickersView() {
 			<Tabs
 				value={selectedCategory}
 				onValueChange={(value) => {
-					setSelectedCategory({ category: value as StickerCategory });
+					if (isStickerCategory(value)) {
+						setSelectedCategory({ category: value });
+					}
 				}}
 				variant="underline"
 				className="mt-2 flex min-h-0 flex-1 flex-col"
@@ -183,6 +195,10 @@ function StickersContentView() {
 		setSelectedCategory,
 		viewMode,
 	} = useStickersStore();
+
+	if (selectedCategory === "imageMaterials") {
+		return <ImageMaterialStickersView />;
+	}
 
 	if (viewMode === "search") {
 		if (isSearching) {
@@ -306,7 +322,9 @@ function StickerSection({
 								size="sm"
 								className="h-auto gap-1 p-0 text-xs text-primary"
 								onClick={() => {
-									onSeeAll(section.action?.category as StickerCategory);
+									if (section.action?.category) {
+										onSeeAll(section.action.category);
+									}
 								}}
 							>
 								{editorT("stickers.seeAll")}
@@ -339,17 +357,10 @@ function StickerItem({
 	const editor = useEditor();
 	const { addToRecentStickers } = useStickersStore();
 	const [isAdding, setIsAdding] = useState(false);
-	const [hasImageError, setHasImageError] = useState(false);
-
-	useEffect(() => {
-		if (!item.id) {
-			return;
-		}
-
-		setHasImageError(false);
-	}, [item.id]);
+	const [failedStickerId, setFailedStickerId] = useState<string | null>(null);
 
 	const displayName = item.name;
+	const hasImageError = failedStickerId === item.id;
 	const shapePreset =
 		item.provider === "shapes"
 			? parseShapeStickerId({ stickerId: item.id })
@@ -423,7 +434,7 @@ function StickerItem({
 								}
 							: undefined
 					}
-					onError={() => setHasImageError(true)}
+					onError={() => setFailedStickerId(item.id)}
 					loading="lazy"
 					unoptimized
 				/>
